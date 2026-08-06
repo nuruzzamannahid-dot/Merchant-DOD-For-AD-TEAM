@@ -134,6 +134,9 @@
     border-bottom:2px solid transparent;}
   .tabbtn:hover{color:var(--text);}
   .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tabcount{font-family:var(--font-mono);font-size:10.5px;color:var(--alert);background:var(--alert-dim);
+    border:1px solid rgba(255,92,122,0.35);padding:1px 6px;border-radius:8px;margin-left:4px;}
+  .tabcount:empty{display:none;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
@@ -203,6 +206,7 @@
 
   <nav class="tabnav" id="tabNav">
     <button class="tabbtn active" data-tab="dashboard">Dashboard</button>
+    <button class="tabbtn" data-tab="flagged">Off 2+ Days <span class="tabcount" id="flaggedTabCount"></span></button>
     <button class="tabbtn" data-tab="merchantMatrix">Merchant × Date</button>
     <button class="tabbtn" data-tab="kamSummary">KAM Summary</button>
     <button class="tabbtn" data-tab="kamMatrix">KAM × Date</button>
@@ -222,12 +226,15 @@
       <div class="stat"><div class="num" id="statSynced">–</div><div class="lbl">Last synced</div></div>
     </section>
 
+    <section id="kamSections"></section>
+  </div>
+
+  <!-- ===== Tab: Flagged (merchants off orders 2+ days) ===== -->
+  <div class="tab-panel" id="panel-flagged">
     <section class="alertbox empty" id="alertBox">
       <h3><span class="alert-ring" style="display:none"></span>No merchants currently flagged</h3>
       <div class="alert-chips" id="alertChips"></div>
     </section>
-
-    <section id="kamSections"></section>
   </div>
 
   <!-- ===== Tab: Merchant x Date matrix ===== -->
@@ -319,6 +326,8 @@ async function loadData(){
     STATE.dates = json.dates || [];
     STATE.merchants = json.merchants || [];
     document.getElementById('emptyState').style.display = 'none';
+    const flaggedCount = STATE.merchants.filter(m => isFlagged(m.orders)).length;
+    document.getElementById('flaggedTabCount').textContent = flaggedCount ? flaggedCount : '';
     renderActiveTab();
   } catch(err){
     console.error(err);
@@ -385,27 +394,6 @@ function renderDashboardInner(){
   document.getElementById('statSynced').textContent = STATE.dates.length ? fmtDate(STATE.dates[todayIdx]) : "–";
   document.getElementById('footNote').textContent =
     `Merchant Pulse · ${STATE.dates.length} day window · updated ${new Date().toLocaleTimeString()}`;
-
-  // ---- alert rail ----
-  const alertBox = document.getElementById('alertBox');
-  const chipWrap = document.getElementById('alertChips');
-  chipWrap.innerHTML = "";
-  if (flagged.length){
-    alertBox.classList.remove('empty');
-    alertBox.querySelector('h3').innerHTML =
-      `<span class="alert-ring"></span>${flagged.length} merchant${flagged.length>1?'s':''} off orders ${CONFIG.ALERT_DAYS}+ days`;
-    flagged
-      .sort((a,b)=>a.businessName.localeCompare(b.businessName))
-      .forEach(m => {
-        const c = document.createElement('div');
-        c.className = 'chip';
-        c.innerHTML = `<b>${esc(m.businessName)}</b> <span>· ${esc(m.assignedKam || 'Unassigned')}</span>`;
-        chipWrap.appendChild(c);
-      });
-  } else {
-    alertBox.classList.add('empty');
-    alertBox.querySelector('h3').innerHTML = `No merchants currently flagged`;
-  }
 
   // ---- kam sections ----
   const container = document.getElementById('kamSections');
@@ -514,6 +502,7 @@ function activeTab(){
 function renderActiveTab(tab){
   tab = tab || activeTab();
   if (tab === 'dashboard') render();
+  else if (tab === 'flagged') renderFlagged();
   else if (tab === 'merchantMatrix') renderMerchantMatrix();
   else if (tab === 'kamSummary') renderKamSummary();
   else if (tab === 'kamMatrix') renderKamMatrix();
@@ -522,6 +511,42 @@ function renderActiveTab(tab){
 /* =========================================================
    Tab: Merchant x Date matrix
    ========================================================= */
+/* =========================================================
+   Tab: Flagged (merchants off orders CONFIG.ALERT_DAYS+ days)
+   ========================================================= */
+function renderFlagged(){
+  const alertBox = document.getElementById('alertBox');
+  try { renderFlaggedInner(alertBox); }
+  catch(err){ renderTabError(alertBox.parentElement, err); }
+}
+
+function renderFlaggedInner(alertBox){
+  const kamPick = document.getElementById('kamFilter').value;
+  const pool = kamPick
+    ? STATE.merchants.filter(m => (m.assignedKam || "(Unassigned)") === kamPick)
+    : STATE.merchants;
+  const flagged = pool.filter(m => isFlagged(m.orders));
+
+  const chipWrap = document.getElementById('alertChips');
+  chipWrap.innerHTML = "";
+  if (flagged.length){
+    alertBox.classList.remove('empty');
+    alertBox.querySelector('h3').innerHTML =
+      `<span class="alert-ring"></span>${flagged.length} merchant${flagged.length>1?'s':''} off orders ${CONFIG.ALERT_DAYS}+ days`;
+    flagged
+      .sort((a,b)=>a.businessName.localeCompare(b.businessName))
+      .forEach(m => {
+        const c = document.createElement('div');
+        c.className = 'chip';
+        c.innerHTML = `<b>${esc(m.businessName)}</b> <span>· ${esc(m.assignedKam || 'Unassigned')}</span>`;
+        chipWrap.appendChild(c);
+      });
+  } else {
+    alertBox.classList.add('empty');
+    alertBox.querySelector('h3').innerHTML = `No merchants currently flagged`;
+  }
+}
+
 function renderMerchantMatrix(){
   const table = document.getElementById('merchantMatrixTable');
   try { renderMerchantMatrixInner(table); }
