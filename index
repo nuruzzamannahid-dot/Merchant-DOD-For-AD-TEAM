@@ -1,292 +1,400 @@
-/**
- * ============================================================================
- * AD TEAM DATA - Complete Apps Script (FIXED for Render Dashboard)
- * ============================================================================
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Merchant Pulse — DOD Order Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0E14;
+    --surface:#131822;
+    --surface-alt:#1B212C;
+    --line:#232A37;
+    --text:#E8ECF1;
+    --text-muted:#8B93A1;
+    --text-faint:#565F6E;
+    --accent:#33D6A6;
+    --accent-dim:#1F5F4D;
+    --alert:#FF5C7A;
+    --alert-dim:#4A1F2A;
+    --warn:#F2B84B;
+    --radius:10px;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --font-body:'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--accent-dim);color:var(--text);}
 
-const SYNC_CONFIG = {
-  DUMP_SHEET: 'DUPM FILE',
-  KAM_SHEET: 'AD KAM MERCHANT',
-  OUTPUT_SHEET: 'AD TEAM DATA',
-  DUMP_HEADER_ROW: 3,
-  DUMP_DATA_START_ROW: 4,
-  KAM_HEADER_ROW: 1,
-  KAM_DATA_START_ROW: 2
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 80px;}
+
+  /* ---- Header ---- */
+  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:38px;height:38px;border-radius:9px;background:linear-gradient(155deg,var(--accent),#1a9e7a);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
+  .brand-mark::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--bg);position:absolute;}
+  .brand-mark::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(11,14,20,0.55);position:absolute;animation:sonar 2.4s ease-out infinite;}
+  @keyframes sonar{0%{transform:scale(0.5);opacity:.9;}100%{transform:scale(1.6);opacity:0;}}
+  .brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--text-muted);}
+
+  .top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .pill-input, select.pill-input{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    font-family:var(--font-body);font-size:13px;padding:9px 14px;border-radius:20px;outline:none;}
+  .pill-input::placeholder{color:var(--text-faint);}
+  .pill-input:focus{border-color:var(--accent-dim);}
+  select.pill-input{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:30px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238B93A1'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center;}
+  button.refresh{background:var(--surface);border:1px solid var(--line);color:var(--text-muted);
+    font-family:var(--font-body);font-size:13px;padding:9px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:7px;}
+  button.refresh:hover{color:var(--text);border-color:var(--accent-dim);}
+  button.refresh .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  button.refresh.loading .dot{animation:pulse-dot 0.9s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:.25;}50%{opacity:1;}}
+
+  /* ---- Stat strip ---- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .stat .num{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1;}
+  .stat .lbl{font-size:12px;color:var(--text-muted);margin-top:6px;}
+  .stat.alertstat .num{color:var(--alert);}
+  .stat.alertstat{border-color:var(--alert-dim);}
+
+  /* ---- Alert rail ---- */
+  .alertbox{border:1px solid var(--alert-dim);background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));
+    border-radius:var(--radius);padding:14px 16px 6px;margin-bottom:24px;}
+  .alertbox.empty{border-color:var(--line);background:var(--surface);}
+  .alertbox h3{font-family:var(--font-display);font-size:13px;margin:0 0 10px;display:flex;align-items:center;gap:8px;
+    color:var(--alert);text-transform:uppercase;letter-spacing:.06em;}
+  .alertbox.empty h3{color:var(--text-muted);}
+  .alert-ring{width:8px;height:8px;border-radius:50%;border:2px solid var(--alert);position:relative;flex-shrink:0;}
+  .alert-ring::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--alert);animation:sonar 1.6s ease-out infinite;}
+  .alert-chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:12px;}
+  .chip{font-family:var(--font-mono);font-size:12px;background:var(--alert-dim);color:#ffc3d0;padding:6px 10px;border-radius:7px;
+    border:1px solid rgba(255,92,122,0.35);white-space:nowrap;}
+  .chip b{color:#fff;font-weight:600;}
+  .chip span{color:#ff9fb2;opacity:.85;}
+
+  /* ---- KAM section ---- */
+  .kam-section{margin-bottom:18px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);}
+  .kam-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none;
+    background:var(--surface-alt);}
+  .kam-head:hover{background:#212836;}
+  .kam-head .left{display:flex;align-items:center;gap:10px;}
+  .kam-head .caret{font-size:10px;color:var(--text-faint);transition:transform .15s ease;}
+  .kam-section.collapsed .caret{transform:rotate(-90deg);}
+  .kam-head .name{font-family:var(--font-display);font-weight:600;font-size:14.5px;}
+  .kam-head .count{font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);background:var(--surface);
+    border:1px solid var(--line);padding:2px 8px;border-radius:10px;}
+  .kam-head .kam-alert{font-family:var(--font-mono);font-size:11.5px;color:var(--alert);background:var(--alert-dim);
+    border:1px solid rgba(255,92,122,0.35);padding:2px 8px;border-radius:10px;}
+
+  table.merchants{width:100%;border-collapse:collapse;}
+  .kam-section.collapsed table.merchants{display:none;}
+  table.merchants thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);
+    font-weight:500;padding:10px 16px 8px;border-bottom:1px solid var(--line);}
+  table.merchants tbody td{padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  table.merchants tbody tr:last-child td{border-bottom:none;}
+  table.merchants tbody tr:hover{background:rgba(255,255,255,0.015);}
+  table.merchants tbody tr.flagged{background:rgba(255,92,122,0.045);}
+  .mname{font-weight:500;}
+  .mid{font-family:var(--font-mono);color:var(--text-faint);font-size:11.5px;}
+  .today-val{font-family:var(--font-mono);font-size:14px;font-weight:600;}
+  .today-val.zero{color:var(--text-faint);}
+  .delta{font-family:var(--font-mono);font-size:11.5px;margin-left:6px;}
+  .delta.up{color:var(--accent);}
+  .delta.down{color:var(--alert);}
+  .delta.flat{color:var(--text-faint);}
+
+  .pulse{display:flex;gap:3px;align-items:flex-end;}
+  .pulse .d{width:9px;height:16px;border-radius:2px;background:var(--surface-alt);border:1px solid var(--line);position:relative;}
+  .pulse .d.hasdata{background:var(--accent-dim);border-color:var(--accent-dim);}
+  .pulse .d.zero{background:transparent;border:1px solid var(--alert);}
+  .pulse .d.zero.recent{animation:zero-pulse 1.4s ease-in-out infinite;}
+  @keyframes zero-pulse{0%,100%{border-color:var(--alert);}50%{border-color:#ff9fb2;}}
+  .pulse .d.nodata{opacity:.25;}
+
+  .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:6px;white-space:nowrap;}
+  .badge.off{background:var(--alert-dim);color:#ffc3d0;border:1px solid rgba(255,92,122,0.4);}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
+  .empty-state .big{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:6px;}
+  .empty-state code{background:var(--surface-alt);padding:2px 6px;border-radius:5px;font-family:var(--font-mono);font-size:12px;}
+
+  footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:36px;font-family:var(--font-mono);}
+
+  @media (max-width:760px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    table.merchants thead{display:none;}
+    table.merchants, table.merchants tbody, table.merchants tr, table.merchants td{display:block;width:100%;}
+    table.merchants tbody tr{padding:12px 16px;border-bottom:1px solid var(--line);}
+    table.merchants tbody td{padding:3px 0;border-bottom:none;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>Merchant Pulse</h1>
+        <p>Day-over-day order tracking · AD Team</p>
+      </div>
+    </div>
+    <div class="top-controls">
+      <input type="text" id="searchInput" class="pill-input" placeholder="Search merchant or ID…" />
+      <select id="kamFilter" class="pill-input"><option value="">All KAMs</option></select>
+      <button class="refresh" id="refreshBtn"><span class="dot"></span>Refresh</button>
+    </div>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="num" id="statTotal">–</div><div class="lbl">Merchants tracked</div></div>
+    <div class="stat"><div class="num" id="statToday">–</div><div class="lbl">Orders today</div></div>
+    <div class="stat alertstat"><div class="num" id="statAlerts">–</div><div class="lbl">Off 2+ days</div></div>
+    <div class="stat"><div class="num" id="statSynced">–</div><div class="lbl">Last synced</div></div>
+  </section>
+
+  <section class="alertbox empty" id="alertBox">
+    <h3><span class="alert-ring" style="display:none"></span>No merchants currently flagged</h3>
+    <div class="alert-chips" id="alertChips"></div>
+  </section>
+
+  <section id="kamSections"></section>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="big">Not connected yet</div>
+    <div>Paste your Apps Script Web App URL into <code>CONFIG.WEB_APP_URL</code> near the top of this file, then redeploy.</div>
+  </div>
+
+  <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
+</div>
+
+<script>
+/* =========================================================
+   CONFIG — paste your Apps Script Web App URL below.
+   (Extensions > Apps Script > Deploy > New deployment > Web app
+    → Execute as: Me, Who has access: Anyone with the link)
+   ========================================================= */
+const CONFIG = {
+  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxoY-Zcp2I3DPP_XbS_tJNOCnbY7p26Rdd3WeLIuV1JFBO0P1fZrv6Q6hxVADmHZ8aX/exec",
+  REFRESH_MS: 5 * 60 * 1000,   // auto-refresh every 5 minutes
+  ALERT_DAYS: 2                 // consecutive zero-order days that trigger an alert
 };
 
-// ═════════════════════════════════════════════════════════════════════════════
-// TRIGGERS & MENU
-// ═════════════════════════════════════════════════════════════════════════════
+let STATE = { dates: [], merchants: [], groups: {}, collapsed: {} };
 
-function onEdit(e) {
-  if (!e || !e.source) return;
-  const editedSheetName = e.range.getSheet().getName();
-  if (editedSheetName === SYNC_CONFIG.DUMP_SHEET || editedSheetName === SYNC_CONFIG.KAM_SHEET) {
-    syncAdTeamData();
-  }
+function fmtDate(iso){
+  if(!iso) return "–";
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
 }
 
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('AD TEAM DATA')
-    .addItem('🔄 Sync Now', 'syncAdTeamData')
-    .addItem('📊 Test Dashboard API', 'testDashboardAPI')
-    .addToUi();
+function isFlagged(orders){
+  const n = orders.length;
+  if (n < CONFIG.ALERT_DAYS) return false;
+  const tail = orders.slice(n - CONFIG.ALERT_DAYS);
+  return tail.every(v => v === 0);
 }
 
-function createHourlyTrigger() {
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(t => {
-    if (t.getHandlerFunction() === 'syncAdTeamData') {
-      ScriptApp.deleteTrigger(t);
-    }
-  });
-  ScriptApp.newTrigger('syncAdTeamData').timeBased().everyHours(1).create();
-  SpreadsheetApp.getUi().alert('Hourly sync trigger installed!');
-}
-
-function findSheetLoose_(ss, targetName) {
-  const exact = ss.getSheetByName(targetName);
-  if (exact) return exact;
-  const normalize = function (s) { return s.trim().toLowerCase(); };
-  const target = normalize(targetName);
-  const all = ss.getSheets();
-  for (let i = 0; i < all.length; i++) {
-    if (normalize(all[i].getName()) === target) return all[i];
-  }
-  return null;
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// SYNC FUNCTION
-// ═════════════════════════════════════════════════════════════════════════════
-
-function syncAdTeamData() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const dumpSheet = findSheetLoose_(ss, SYNC_CONFIG.DUMP_SHEET);
-  const kamSheet = findSheetLoose_(ss, SYNC_CONFIG.KAM_SHEET);
-  const outputSheet = findSheetLoose_(ss, SYNC_CONFIG.OUTPUT_SHEET);
-
-  if (!dumpSheet || !kamSheet || !outputSheet) {
-    const actualNames = ss.getSheets().map(function (s) { return '"' + s.getName() + '"'; }).join(', ');
-    const missing = [];
-    if (!dumpSheet) missing.push('DUPM FILE');
-    if (!kamSheet) missing.push('AD KAM MERCHANT');
-    if (!outputSheet) missing.push('AD TEAM DATA');
-    throw new Error('Could not find: ' + missing.join(', ') + '. Actual tabs: ' + actualNames);
-  }
-
-  const dumpLastRow = dumpSheet.getLastRow();
-  const dumpLastCol = dumpSheet.getLastColumn();
-  if (dumpLastRow < SYNC_CONFIG.DUMP_DATA_START_ROW) return;
-
-  const dumpHeaders = dumpSheet.getRange(SYNC_CONFIG.DUMP_HEADER_ROW, 1, 1, dumpLastCol).getValues()[0];
-  const dumpData = dumpSheet.getRange(SYNC_CONFIG.DUMP_DATA_START_ROW, 1, dumpLastRow - SYNC_CONFIG.DUMP_DATA_START_ROW + 1, dumpLastCol).getValues();
-
-  const kamLastRow = kamSheet.getLastRow();
-  if (kamLastRow < SYNC_CONFIG.KAM_DATA_START_ROW) return;
-
-  const kamData = kamSheet.getRange(SYNC_CONFIG.KAM_DATA_START_ROW, 1, kamLastRow - SYNC_CONFIG.KAM_DATA_START_ROW + 1, 5).getValues();
-
-  const kamMap = {};
-  kamData.forEach(function (row) {
-    const businessId = String(row[0]).trim();
-    const businessName = String(row[1]).trim();
-    if (!businessId && !businessName) return;
-    const key = businessId + '|' + businessName;
-    kamMap[key] = { assignedGroup: row[3], assignedKam: row[4] };
-  });
-
-  const outputRows = [];
-  dumpData.forEach(function (row) {
-    const businessId = String(row[0]).trim();
-    const businessName = String(row[1]).trim();
-    if (!businessId && !businessName) return;
-    const key = businessId + '|' + businessName;
-    const kamMatch = kamMap[key];
-    if (kamMatch) {
-      outputRows.push(row.concat([kamMatch.assignedGroup, kamMatch.assignedKam]));
-    }
-  });
-
-  const outputHeaders = dumpHeaders.concat(['Assigned Group', 'Assigned KAM']);
-  const numCols = outputHeaders.length;
-
-  const kamGroups = {};
-  const kamOrder = [];
-  outputRows.forEach(function (row) {
-    const kamName = row[row.length - 1] || '(Unassigned)';
-    if (!kamGroups[kamName]) { kamGroups[kamName] = []; kamOrder.push(kamName); }
-    kamGroups[kamName].push(row);
-  });
-  kamOrder.sort();
-
-  outputSheet.clear();
-  let currentRow = 1;
-  const titleFormatRows = [];
-  const headerFormatRows = [];
-
-  kamOrder.forEach(function (kamName) {
-    outputSheet.getRange(currentRow, 1).setValue(kamName);
-    outputSheet.getRange(currentRow, 1, 1, numCols).merge();
-    titleFormatRows.push(currentRow);
-    currentRow++;
-
-    outputSheet.getRange(currentRow, 1, 1, numCols).setValues([outputHeaders]);
-    headerFormatRows.push(currentRow);
-    currentRow++;
-
-    const rows = kamGroups[kamName];
-    outputSheet.getRange(currentRow, 1, rows.length, numCols).setValues(rows);
-    currentRow += rows.length;
-    currentRow++;
-  });
-
-  titleFormatRows.forEach(function (r) {
-    outputSheet.getRange(r, 1, 1, numCols).setFontWeight('bold').setBackground('#4a86e8').setFontColor('#ffffff').setHorizontalAlignment('center').setFontSize(13);
-  });
-  headerFormatRows.forEach(function (r) {
-    outputSheet.getRange(r, 1, 1, numCols).setFontWeight('bold').setBackground('#f3f3f3').setFontSize(11);
-  });
-  for (let c = 1; c <= numCols; c++) outputSheet.autoResizeColumn(c);
-
-  Logger.log('Sync completed. Merchants: ' + outputRows.length);
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// DASHBOARD WEB APP API (FIXED for JSONP + CORS)
-// ═════════════════════════════════════════════════════════════════════════════
-
-function doGet(e) {
-  const callback = e && e.parameter && e.parameter.callback ? e.parameter.callback : null;
-  
+async function loadData(){
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = findSheetLoose_(ss, 'AD TEAM DATA');
-    
-    if (!sheet) {
-      return respond({ error: 'AD TEAM DATA sheet not found' }, callback, 404);
+    if (!CONFIG.WEB_APP_URL || CONFIG.WEB_APP_URL.indexOf("PASTE_YOUR") === 0){
+      document.getElementById('emptyState').style.display = 'block';
+      return;
     }
-    
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    if (lastRow < 3) {
-      return respond({ merchants: [], lastUpdated: new Date().toISOString() }, callback);
-    }
-    
-    const allData = sheet.getRange(1, 1, lastRow, lastCol).getValues();
-    const headerRow = allData[0];
-    const dateCols = [];
-    const dateHeaders = [];
-    
-    for (let c = 0; c < headerRow.length; c++) {
-      const h = String(headerRow[c]).trim();
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(h) ||
-          /^\d{1,2}-\d{1,2}-\d{4}/.test(h) ||
-          /^\d{4}-\d{2}-\d{2}/.test(h) ||
-          /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(h)) {
-        dateCols.push(c);
-        dateHeaders.push(h.includes(' ') ? h.split(' ')[0] : h);
-      }
-    }
-    
-    const merchants = [];
-    let currentKam = '';
-    
-    for (let r = 0; r < allData.length; r++) {
-      const row = allData[r];
-      const firstCell = String(row[0] || '').trim();
-      if (!firstCell) continue;
-      
-      if (!row[1] && !/Business ID|onboarding|Assigned/i.test(firstCell)) {
-        currentKam = firstCell;
-        continue;
-      }
-      
-      if (/Business ID/i.test(firstCell)) continue;
-      
-      if (firstCell && row[1]) {
-        const businessId = String(row[0]).trim();
-        const businessName = String(row[1]).trim();
-        const onboarding = String(row[2] || '').trim();
-        
-        const orders = dateCols.map(c => {
-          const val = row[c];
-          if (val === '' || val === null || val === undefined) return 0;
-          const num = Number(val);
-          return isNaN(num) ? 0 : num;
-        });
-        
-        const assignedGroup = String(row[row.length - 2] || '').trim();
-        const assignedKam = String(row[row.length - 1] || currentKam).trim();
-        
-        merchants.push({
-          id: businessId,
-          name: businessName,
-          onboarding: onboarding,
-          kam: assignedKam || currentKam || 'Unassigned',
-          group: assignedGroup || 'Unknown',
-          orders: orders,
-          dates: dateHeaders
-        });
-      }
-    }
-    
-    return respond({
-      merchants: merchants,
-      lastUpdated: new Date().toISOString(),
-      totalMerchants: merchants.length,
-      dateRange: { from: dateHeaders[0] || '', to: dateHeaders[dateHeaders.length - 1] || '' }
-    }, callback);
-    
-  } catch (err) {
-    return respond({ error: err.message, stack: err.stack }, callback, 500);
+    const res = await fetch(CONFIG.WEB_APP_URL, {cache:"no-store"});
+    const json = await res.json();
+    STATE.dates = json.dates || [];
+    STATE.merchants = json.merchants || [];
+    document.getElementById('emptyState').style.display = 'none';
+    render();
+  } catch(err){
+    console.error(err);
+    document.getElementById('emptyState').style.display = 'block';
+    document.querySelector('#emptyState .big').textContent = 'Could not load data';
+    document.querySelector('#emptyState div:nth-child(2)').innerHTML =
+      'Check that the Web App is deployed with "Anyone with the link" access, and that the URL in <code>CONFIG.WEB_APP_URL</code> is correct.';
+  } finally {
+    btn.classList.remove('loading');
   }
 }
 
-function respond(data, callback, statusCode) {
-  statusCode = statusCode || 200;
-  const json = JSON.stringify(data);
-  
-  if (callback) {
-    // JSONP response
-    const output = ContentService.createTextOutput(callback + '(' + json + ');')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    return output;
-  } else {
-    // Regular JSON with CORS
-    const output = ContentService.createTextOutput(json)
-      .setMimeType(ContentService.MimeType.JSON);
-    return output;
-  }
-}
-
-// ═════════════════════════════════════════════════════════════════════════════
-// TEST FUNCTIONS
-// ═════════════════════════════════════════════════════════════════════════════
-
-function testDashboardAPI() {
-  const result = doGet({ parameter: {} });
-  const content = result.getContent();
-  const data = JSON.parse(content);
-  Logger.log('=== TEST ===');
-  Logger.log('Merchants: ' + data.totalMerchants);
-  Logger.log('Date range: ' + JSON.stringify(data.dateRange));
-  if (data.merchants && data.merchants[0]) {
-    Logger.log('Sample: ' + data.merchants[0].name + ' orders=' + JSON.stringify(data.merchants[0].orders));
-  }
-  let alertCount = 0;
-  data.merchants.forEach(m => {
-    let streak = 0;
-    for (let i = m.orders.length - 1; i >= 0; i--) {
-      if (m.orders[i] === 0) streak++; else break;
-    }
-    if (streak >= 2) { alertCount++; Logger.log('ALERT: ' + m.name + ' - ' + streak + ' days zero'); }
+function buildGroups(list){
+  const groups = {};
+  list.forEach(m => {
+    const kam = m.assignedKam || "(Unassigned)";
+    if (!groups[kam]) groups[kam] = [];
+    groups[kam].push(m);
   });
-  Logger.log('Alerts: ' + alertCount);
+  return groups;
 }
 
-function manualSync() {
-  syncAdTeamData();
-  SpreadsheetApp.getUi().alert('Sync done!');
+function populateKamFilter(groups){
+  const sel = document.getElementById('kamFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All KAMs</option>';
+  Object.keys(groups).sort().forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k; opt.textContent = `${k} (${groups[k].length})`;
+    sel.appendChild(opt);
+  });
+  sel.value = current;
 }
+
+function render(){
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const kamPick = document.getElementById('kamFilter').value;
+
+  let filtered = STATE.merchants.filter(m => {
+    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
+    if (search){
+      const hay = (m.businessName + " " + m.businessId).toLowerCase();
+      if (hay.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+
+  const groups = buildGroups(filtered);
+  STATE.groups = groups;
+  populateKamFilter(buildGroups(STATE.merchants));
+
+  // ---- stats ----
+  const todayIdx = STATE.dates.length - 1;
+  const todayTotal = STATE.merchants.reduce((sum,m) => sum + (Number(m.orders[todayIdx]) || 0), 0);
+  const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
+  document.getElementById('statTotal').textContent = STATE.merchants.length;
+  document.getElementById('statToday').textContent = todayTotal;
+  document.getElementById('statAlerts').textContent = flagged.length;
+  document.getElementById('statSynced').textContent = STATE.dates.length ? fmtDate(STATE.dates[todayIdx]) : "–";
+  document.getElementById('footNote').textContent =
+    `Merchant Pulse · ${STATE.dates.length} day window · updated ${new Date().toLocaleTimeString()}`;
+
+  // ---- alert rail ----
+  const alertBox = document.getElementById('alertBox');
+  const chipWrap = document.getElementById('alertChips');
+  chipWrap.innerHTML = "";
+  if (flagged.length){
+    alertBox.classList.remove('empty');
+    alertBox.querySelector('h3').innerHTML =
+      `<span class="alert-ring"></span>${flagged.length} merchant${flagged.length>1?'s':''} off orders ${CONFIG.ALERT_DAYS}+ days`;
+    flagged
+      .sort((a,b)=>a.businessName.localeCompare(b.businessName))
+      .forEach(m => {
+        const c = document.createElement('div');
+        c.className = 'chip';
+        c.innerHTML = `<b>${m.businessName}</b> <span>· ${m.assignedKam || 'Unassigned'}</span>`;
+        chipWrap.appendChild(c);
+      });
+  } else {
+    alertBox.classList.add('empty');
+    alertBox.querySelector('h3').innerHTML = `No merchants currently flagged`;
+  }
+
+  // ---- kam sections ----
+  const container = document.getElementById('kamSections');
+  container.innerHTML = "";
+  Object.keys(groups).sort().forEach(kam => {
+    const rows = groups[kam].sort((a,b)=>a.businessName.localeCompare(b.businessName));
+    const flaggedCount = rows.filter(m => isFlagged(m.orders)).length;
+    const collapsed = !!STATE.collapsed[kam];
+
+    const section = document.createElement('div');
+    section.className = 'kam-section' + (collapsed ? ' collapsed' : '');
+
+    const head = document.createElement('div');
+    head.className = 'kam-head';
+    head.innerHTML = `
+      <div class="left">
+        <span class="caret">▾</span>
+        <span class="name">${kam}</span>
+        <span class="count">${rows.length} merchant${rows.length>1?'s':''}</span>
+      </div>
+      ${flaggedCount ? `<span class="kam-alert">${flaggedCount} off</span>` : ''}
+    `;
+    head.addEventListener('click', () => {
+      STATE.collapsed[kam] = !STATE.collapsed[kam];
+      render();
+    });
+    section.appendChild(head);
+
+    const table = document.createElement('table');
+    table.className = 'merchants';
+    const last7start = Math.max(0, STATE.dates.length - 7);
+    const dateWindow = STATE.dates.slice(last7start);
+
+    table.innerHTML = `
+      <thead><tr>
+        <th>Merchant</th>
+        <th>Last ${dateWindow.length} days</th>
+        <th>Today</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+
+    rows.forEach(m => {
+      const flag = isFlagged(m.orders);
+      const orderWindow = m.orders.slice(last7start);
+      const todayVal = m.orders[m.orders.length-1];
+      const yestVal = m.orders.length > 1 ? m.orders[m.orders.length-2] : null;
+      let deltaHtml = '';
+      if (yestVal !== null && yestVal !== undefined){
+        const diff = (todayVal||0) - (yestVal||0);
+        const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+        const sign = diff > 0 ? '+' : '';
+        deltaHtml = `<span class="delta ${cls}">${sign}${diff}</span>`;
+      }
+
+      const dots = dateWindow.map((d,i) => {
+        const v = orderWindow[i];
+        const isLastTwo = i >= dateWindow.length - CONFIG.ALERT_DAYS;
+        let cls = 'd';
+        if (v === null || v === undefined) cls += ' nodata';
+        else if (v === 0) cls += ' zero' + (isLastTwo && flag ? ' recent' : '');
+        else cls += ' hasdata';
+        const label = `${d}: ${v===null||v===undefined?'no data':v+' orders'}`;
+        return `<div class="${cls}" title="${label}"></div>`;
+      }).join('');
+
+      const tr = document.createElement('tr');
+      if (flag) tr.className = 'flagged';
+      tr.innerHTML = `
+        <td>
+          <div class="mname">${m.businessName}</div>
+          <div class="mid">#${m.businessId}</div>
+        </td>
+        <td><div class="pulse">${dots}</div></td>
+        <td><span class="today-val ${(!todayVal)?'zero':''}">${todayVal ?? '–'}</span>${deltaHtml}</td>
+        <td>${flag ? `<span class="badge off">OFF ${CONFIG.ALERT_DAYS}D</span>` : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    section.appendChild(table);
+    container.appendChild(section);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', render);
+document.getElementById('kamFilter').addEventListener('change', render);
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+loadData();
+setInterval(loadData, CONFIG.REFRESH_MS);
+</script>
+</body>
+</html>
