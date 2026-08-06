@@ -1,530 +1,292 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Merchant DOD Dashboard</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --text: #f1f5f9;
-      --muted: #94a3b8;
-      --green: #22c55e;
-      --red: #ef4444;
-      --amber: #f59e0b;
-      --blue: #3b82f6;
-      --purple: #a855f7;
-      --font: 'Inter', system-ui, -apple-system, sans-serif;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      min-height: 100vh;
-      padding: 24px;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .header h1 {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .header .sub {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 4px;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-    .badge-danger {
-      background: rgba(239,68,68,0.15);
-      color: var(--red);
-      border: 1px solid rgba(239,68,68,0.3);
-    }
-    .badge-ok {
-      background: rgba(34,197,94,0.15);
-      color: var(--green);
-      border: 1px solid rgba(34,197,94,0.3);
-    }
-    .badge-warn {
-      background: rgba(245,158,11,0.15);
-      color: var(--amber);
-      border: 1px solid rgba(245,158,11,0.3);
-    }
-    .alert-banner {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid var(--red);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 14px;
-      color: var(--red);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      animation: slideDown 0.3s ease;
-    }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .pulse {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--red);
-      animation: pulse 1.5s infinite;
-      flex-shrink: 0;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
-      70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
-      100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-    }
-    .filter-bar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .filter-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-    .filter-btn:hover, .filter-btn.active {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: #fff;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-      gap: 16px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    }
-    .card.alert {
-      border-color: var(--red);
-      box-shadow: 0 0 0 1px var(--red), 0 4px 20px rgba(239,68,68,0.12);
-      animation: alertPulse 2s infinite;
-    }
-    @keyframes alertPulse {
-      0%, 100% { box-shadow: 0 0 0 1px var(--red), 0 4px 20px rgba(239,68,68,0.12); }
-      50% { box-shadow: 0 0 0 1px var(--red), 0 4px 30px rgba(239,68,68,0.25); }
-    }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 14px;
-    }
-    .merchant-name {
-      font-weight: 700;
-      font-size: 15px;
-      line-height: 1.3;
-      max-width: 65%;
-      word-break: break-word;
-    }
-    .merchant-id {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 500;
-      margin-top: 3px;
-    }
-    .kam-tag {
-      font-size: 11px;
-      padding: 4px 12px;
-      border-radius: 8px;
-      background: rgba(168,85,247,0.15);
-      color: var(--purple);
-      border: 1px solid rgba(168,85,247,0.25);
-      white-space: nowrap;
-      font-weight: 600;
-    }
-    .dates {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .sparkline {
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-      height: 52px;
-      margin: 12px 0 10px;
-      padding: 0 2px;
-    }
-    .bar {
-      flex: 1;
-      border-radius: 4px 4px 0 0;
-      min-height: 3px;
-      transition: height 0.5s ease;
-      position: relative;
-      cursor: pointer;
-    }
-    .bar:hover::after {
-      content: attr(data-val);
-      position: absolute;
-      bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: #0f172a;
-      color: #fff;
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 10;
-      border: 1px solid var(--border);
-      font-weight: 600;
-    }
-    .bar-zero { background: var(--red); opacity: 0.5; }
-    .bar-low { background: var(--amber); }
-    .bar-mid { background: var(--blue); }
-    .bar-high { background: var(--green); }
-    .stats-row {
-      display: flex;
-      gap: 18px;
-      font-size: 12px;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
-    .stat { display: flex; flex-direction: column; }
-    .stat-label { color: var(--muted); font-size: 11px; margin-bottom: 3px; font-weight: 500; }
-    .stat-value { font-weight: 700; font-size: 15px; }
-    .trend-up { color: var(--green); }
-    .trend-down { color: var(--red); }
-    .trend-flat { color: var(--muted); }
-    .empty {
-      text-align: center;
-      color: var(--muted);
-      padding: 80px 20px;
-      font-size: 16px;
-      grid-column: 1 / -1;
-    }
-    .loading {
-      text-align: center;
-      color: var(--muted);
-      padding: 80px 20px;
-      font-size: 16px;
-      grid-column: 1 / -1;
-    }
-    .last-updated {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 4px;
-    }
-    .refresh-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-size: 13px;
-      cursor: pointer;
-      font-family: inherit;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-    .refresh-btn:hover {
-      background: var(--blue);
-      border-color: var(--blue);
-    }
-    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .error-box {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid var(--red);
-      border-radius: 12px;
-      padding: 20px;
-      color: var(--red);
-      text-align: center;
-      grid-column: 1 / -1;
-    }
-    @media (max-width: 600px) {
-      .grid { grid-template-columns: 1fr; }
-      .header h1 { font-size: 18px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <h1>🐝 Merchant DOD Dashboard</h1>
-      <div class="sub">Live from AD TEAM DATA · Auto-refreshes every 60s</div>
-      <div class="last-updated" id="lastUpdated">Loading...</div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <button class="refresh-btn" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
-      <div id="statusBadge" class="badge badge-ok">● All Clear</div>
-    </div>
-  </div>
+/**
+ * ============================================================================
+ * AD TEAM DATA - Complete Apps Script (FIXED for Render Dashboard)
+ * ============================================================================
+ */
 
-  <div id="alertSection"></div>
+const SYNC_CONFIG = {
+  DUMP_SHEET: 'DUPM FILE',
+  KAM_SHEET: 'AD KAM MERCHANT',
+  OUTPUT_SHEET: 'AD TEAM DATA',
+  DUMP_HEADER_ROW: 3,
+  DUMP_DATA_START_ROW: 4,
+  KAM_HEADER_ROW: 1,
+  KAM_DATA_START_ROW: 2
+};
 
-  <div class="filter-bar">
-    <button class="filter-btn active" onclick="setFilter('all')">All Merchants</button>
-    <button class="filter-btn" onclick="setFilter('alert')">⚠️ Alerts Only</button>
-    <button class="filter-btn" onclick="setFilter('zero-today')">0 Orders Today</button>
-  </div>
+// ═════════════════════════════════════════════════════════════════════════════
+// TRIGGERS & MENU
+// ═════════════════════════════════════════════════════════════════════════════
 
-  <div id="merchantGrid" class="grid">
-    <div class="loading">Fetching merchant data...</div>
-  </div>
+function onEdit(e) {
+  if (!e || !e.source) return;
+  const editedSheetName = e.range.getSheet().getName();
+  if (editedSheetName === SYNC_CONFIG.DUMP_SHEET || editedSheetName === SYNC_CONFIG.KAM_SHEET) {
+    syncAdTeamData();
+  }
+}
 
-  <script>
-    // ═══════════════════════════════════════════════════════════════
-    // CONFIG: Replace with your deployed Apps Script Web App URL
-    // ═══════════════════════════════════════════════════════════════
-    const API_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('AD TEAM DATA')
+    .addItem('🔄 Sync Now', 'syncAdTeamData')
+    .addItem('📊 Test Dashboard API', 'testDashboardAPI')
+    .addToUi();
+}
+
+function createHourlyTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(t => {
+    if (t.getHandlerFunction() === 'syncAdTeamData') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+  ScriptApp.newTrigger('syncAdTeamData').timeBased().everyHours(1).create();
+  SpreadsheetApp.getUi().alert('Hourly sync trigger installed!');
+}
+
+function findSheetLoose_(ss, targetName) {
+  const exact = ss.getSheetByName(targetName);
+  if (exact) return exact;
+  const normalize = function (s) { return s.trim().toLowerCase(); };
+  const target = normalize(targetName);
+  const all = ss.getSheets();
+  for (let i = 0; i < all.length; i++) {
+    if (normalize(all[i].getName()) === target) return all[i];
+  }
+  return null;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SYNC FUNCTION
+// ═════════════════════════════════════════════════════════════════════════════
+
+function syncAdTeamData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dumpSheet = findSheetLoose_(ss, SYNC_CONFIG.DUMP_SHEET);
+  const kamSheet = findSheetLoose_(ss, SYNC_CONFIG.KAM_SHEET);
+  const outputSheet = findSheetLoose_(ss, SYNC_CONFIG.OUTPUT_SHEET);
+
+  if (!dumpSheet || !kamSheet || !outputSheet) {
+    const actualNames = ss.getSheets().map(function (s) { return '"' + s.getName() + '"'; }).join(', ');
+    const missing = [];
+    if (!dumpSheet) missing.push('DUPM FILE');
+    if (!kamSheet) missing.push('AD KAM MERCHANT');
+    if (!outputSheet) missing.push('AD TEAM DATA');
+    throw new Error('Could not find: ' + missing.join(', ') + '. Actual tabs: ' + actualNames);
+  }
+
+  const dumpLastRow = dumpSheet.getLastRow();
+  const dumpLastCol = dumpSheet.getLastColumn();
+  if (dumpLastRow < SYNC_CONFIG.DUMP_DATA_START_ROW) return;
+
+  const dumpHeaders = dumpSheet.getRange(SYNC_CONFIG.DUMP_HEADER_ROW, 1, 1, dumpLastCol).getValues()[0];
+  const dumpData = dumpSheet.getRange(SYNC_CONFIG.DUMP_DATA_START_ROW, 1, dumpLastRow - SYNC_CONFIG.DUMP_DATA_START_ROW + 1, dumpLastCol).getValues();
+
+  const kamLastRow = kamSheet.getLastRow();
+  if (kamLastRow < SYNC_CONFIG.KAM_DATA_START_ROW) return;
+
+  const kamData = kamSheet.getRange(SYNC_CONFIG.KAM_DATA_START_ROW, 1, kamLastRow - SYNC_CONFIG.KAM_DATA_START_ROW + 1, 5).getValues();
+
+  const kamMap = {};
+  kamData.forEach(function (row) {
+    const businessId = String(row[0]).trim();
+    const businessName = String(row[1]).trim();
+    if (!businessId && !businessName) return;
+    const key = businessId + '|' + businessName;
+    kamMap[key] = { assignedGroup: row[3], assignedKam: row[4] };
+  });
+
+  const outputRows = [];
+  dumpData.forEach(function (row) {
+    const businessId = String(row[0]).trim();
+    const businessName = String(row[1]).trim();
+    if (!businessId && !businessName) return;
+    const key = businessId + '|' + businessName;
+    const kamMatch = kamMap[key];
+    if (kamMatch) {
+      outputRows.push(row.concat([kamMatch.assignedGroup, kamMatch.assignedKam]));
+    }
+  });
+
+  const outputHeaders = dumpHeaders.concat(['Assigned Group', 'Assigned KAM']);
+  const numCols = outputHeaders.length;
+
+  const kamGroups = {};
+  const kamOrder = [];
+  outputRows.forEach(function (row) {
+    const kamName = row[row.length - 1] || '(Unassigned)';
+    if (!kamGroups[kamName]) { kamGroups[kamName] = []; kamOrder.push(kamName); }
+    kamGroups[kamName].push(row);
+  });
+  kamOrder.sort();
+
+  outputSheet.clear();
+  let currentRow = 1;
+  const titleFormatRows = [];
+  const headerFormatRows = [];
+
+  kamOrder.forEach(function (kamName) {
+    outputSheet.getRange(currentRow, 1).setValue(kamName);
+    outputSheet.getRange(currentRow, 1, 1, numCols).merge();
+    titleFormatRows.push(currentRow);
+    currentRow++;
+
+    outputSheet.getRange(currentRow, 1, 1, numCols).setValues([outputHeaders]);
+    headerFormatRows.push(currentRow);
+    currentRow++;
+
+    const rows = kamGroups[kamName];
+    outputSheet.getRange(currentRow, 1, rows.length, numCols).setValues(rows);
+    currentRow += rows.length;
+    currentRow++;
+  });
+
+  titleFormatRows.forEach(function (r) {
+    outputSheet.getRange(r, 1, 1, numCols).setFontWeight('bold').setBackground('#4a86e8').setFontColor('#ffffff').setHorizontalAlignment('center').setFontSize(13);
+  });
+  headerFormatRows.forEach(function (r) {
+    outputSheet.getRange(r, 1, 1, numCols).setFontWeight('bold').setBackground('#f3f3f3').setFontSize(11);
+  });
+  for (let c = 1; c <= numCols; c++) outputSheet.autoResizeColumn(c);
+
+  Logger.log('Sync completed. Merchants: ' + outputRows.length);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// DASHBOARD WEB APP API (FIXED for JSONP + CORS)
+// ═════════════════════════════════════════════════════════════════════════════
+
+function doGet(e) {
+  const callback = e && e.parameter && e.parameter.callback ? e.parameter.callback : null;
+  
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = findSheetLoose_(ss, 'AD TEAM DATA');
     
-    // Set to true to use mock data (for testing without the backend)
-    const USE_MOCK = false;
-
-    let currentFilter = 'all';
-    let merchantData = [];
-    let autoRefreshInterval;
-
-    // ── Mock data for testing ──
-    const MOCK_DATA = {
-      merchants: [
-        { id: "275", name: "Lecture Publications Ltd", onboarding: "3/5/2025", kam: "Rahat", group: "Team A", orders: [5, 3, 3, 0, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "315", name: "ARFIN", onboarding: "3/10/2025", kam: "Rahat", group: "Team A", orders: [0, 0, 4, 2, 4, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "463", name: "Artgenics by Anika", onboarding: "4/9/2025", kam: "Tasnim", group: "Team B", orders: [1, 0, 0, 5, 1, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "502", name: "Gaming Gear", onboarding: "4/14/2025", kam: "Rahat", group: "Team A", orders: [1, 11, 2, 3, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "523", name: "Icon Auto", onboarding: "4/16/2025", kam: "Tasnim", group: "Team B", orders: [0, 2, 1, 0, 1, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "527", name: "Watchesky", onboarding: "4/16/2025", kam: "Rahat", group: "Team A", orders: [4, 2, 1, 1, 3, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "622", name: "Uzayer's Creation", onboarding: "4/21/2025", kam: "Tasnim", group: "Team B", orders: [4, 4, 0, 3, 2, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "684", name: "Big boss glasses", onboarding: "4/22/2025", kam: "Rahat", group: "Team A", orders: [5, 4, 0, 4, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "729", name: "THAI COCONUT GALLERY", onboarding: "4/23/2025", kam: "Tasnim", group: "Team B", orders: [2, 0, 2, 0, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "758", name: "100% Neon Sign", onboarding: "4/24/2025", kam: "Rahat", group: "Team A", orders: [0, 2, 0, 5, 2, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1061", name: "Cholonini.com.bd", onboarding: "4/27/2025", kam: "Tasnim", group: "Team B", orders: [1, 5, 7, 2, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1584", name: "Be Unique Zone", onboarding: "5/4/2025", kam: "Rahat", group: "Team A", orders: [2, 0, 1, 2, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1608", name: "Purchasehaat", onboarding: "5/4/2025", kam: "Tasnim", group: "Team B", orders: [3, 1, 0, 3, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1706", name: "BRAC Kumon Limited", onboarding: "5/6/2025", kam: "Rahat", group: "Team A", orders: [3, 0, 0, 0, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1738", name: "Fast Shifter", onboarding: "5/7/2025", kam: "Tasnim", group: "Team B", orders: [4, 4, 5, 6, 1, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "1827", name: "Sweet Kiddz", onboarding: "5/10/2025", kam: "Rahat", group: "Team A", orders: [11, 11, 11, 15, 21, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "2105", name: "Sylmart", onboarding: "5/18/2025", kam: "Tasnim", group: "Team B", orders: [8, 7, 2, 2, 2, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "2376", name: "Nibedita Beauty of Nature", onboarding: "5/28/2025", kam: "Rahat", group: "Team A", orders: [0, 0, 0, 1, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "2446", name: "Vapor Shop Banani", onboarding: "5/31/2025", kam: "Tasnim", group: "Team B", orders: [5, 0, 0, 1, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "2823", name: "Postfried", onboarding: "6/19/2025", kam: "Rahat", group: "Team A", orders: [0, 5, 4, 3, 2, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-        { id: "2872", name: "Lumiflick", onboarding: "6/19/2025", kam: "Tasnim", group: "Team B", orders: [0, 0, 0, 0, 0, 0], dates: ["8/1","8/2","8/3","8/4","8/5","8/6"] },
-      ],
+    if (!sheet) {
+      return respond({ error: 'AD TEAM DATA sheet not found' }, callback, 404);
+    }
+    
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 3) {
+      return respond({ merchants: [], lastUpdated: new Date().toISOString() }, callback);
+    }
+    
+    const allData = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+    const headerRow = allData[0];
+    const dateCols = [];
+    const dateHeaders = [];
+    
+    for (let c = 0; c < headerRow.length; c++) {
+      const h = String(headerRow[c]).trim();
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(h) ||
+          /^\d{1,2}-\d{1,2}-\d{4}/.test(h) ||
+          /^\d{4}-\d{2}-\d{2}/.test(h) ||
+          /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(h)) {
+        dateCols.push(c);
+        dateHeaders.push(h.includes(' ') ? h.split(' ')[0] : h);
+      }
+    }
+    
+    const merchants = [];
+    let currentKam = '';
+    
+    for (let r = 0; r < allData.length; r++) {
+      const row = allData[r];
+      const firstCell = String(row[0] || '').trim();
+      if (!firstCell) continue;
+      
+      if (!row[1] && !/Business ID|onboarding|Assigned/i.test(firstCell)) {
+        currentKam = firstCell;
+        continue;
+      }
+      
+      if (/Business ID/i.test(firstCell)) continue;
+      
+      if (firstCell && row[1]) {
+        const businessId = String(row[0]).trim();
+        const businessName = String(row[1]).trim();
+        const onboarding = String(row[2] || '').trim();
+        
+        const orders = dateCols.map(c => {
+          const val = row[c];
+          if (val === '' || val === null || val === undefined) return 0;
+          const num = Number(val);
+          return isNaN(num) ? 0 : num;
+        });
+        
+        const assignedGroup = String(row[row.length - 2] || '').trim();
+        const assignedKam = String(row[row.length - 1] || currentKam).trim();
+        
+        merchants.push({
+          id: businessId,
+          name: businessName,
+          onboarding: onboarding,
+          kam: assignedKam || currentKam || 'Unassigned',
+          group: assignedGroup || 'Unknown',
+          orders: orders,
+          dates: dateHeaders
+        });
+      }
+    }
+    
+    return respond({
+      merchants: merchants,
       lastUpdated: new Date().toISOString(),
-      totalMerchants: 21
-    };
-
-    // ── Alert Logic: 2+ consecutive days of 0 orders ──
-    function checkAlert(orders) {
-      let streak = 0;
-      for (let i = orders.length - 1; i >= 0; i--) {
-        if (orders[i] === 0) streak++;
-        else break;
-      }
-      return streak >= 2;
-    }
-
-    function getTrend(orders) {
-      if (orders.length < 2) return 'flat';
-      const last = orders[orders.length - 2];
-      const prev = orders[orders.length - 3] ?? last;
-      if (last > prev) return 'up';
-      if (last < prev) return 'down';
-      return 'flat';
-    }
-
-    function getBarClass(val, max) {
-      if (val === 0) return 'bar-zero';
-      const pct = val / max;
-      if (pct < 0.2) return 'bar-low';
-      if (pct < 0.6) return 'bar-mid';
-      return 'bar-high';
-    }
-
-    async function loadData() {
-      const btn = document.getElementById('refreshBtn');
-      btn.disabled = true;
-      btn.textContent = '⟳ Loading...';
-      
-      try {
-        let data;
-        if (USE_MOCK) {
-          data = MOCK_DATA;
-          await new Promise(r => setTimeout(r, 600)); // simulate network
-        } else {
-          const res = await fetch(API_URL + '?t=' + Date.now());
-          data = await res.json();
-        }
-        
-        if (data.error) throw new Error(data.error);
-        
-        merchantData = (data.merchants || []).map(m => ({
-          ...m,
-          alert: checkAlert(m.orders),
-          total: m.orders.reduce((a,b) => a+b, 0),
-          avg: (m.orders.reduce((a,b) => a+b, 0) / m.orders.length).toFixed(1),
-          max: Math.max(...m.orders),
-          trend: getTrend(m.orders),
-          zeroToday: m.orders[m.orders.length - 1] === 0
-        }));
-        
-        document.getElementById('lastUpdated').textContent = 
-          'Last updated: ' + new Date(data.lastUpdated || Date.now()).toLocaleString();
-        
-        render();
-      } catch (err) {
-        document.getElementById('merchantGrid').innerHTML = 
-          `<div class="error-box">❌ Failed to load data: ${err.message}<br><small>Check your API_URL and CORS settings</small></div>`;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '↻ Refresh';
-      }
-    }
-
-    function render() {
-      const grid = document.getElementById('merchantGrid');
-      const alertSection = document.getElementById('alertSection');
-      const statusBadge = document.getElementById('statusBadge');
-
-      let merchants = [...merchantData];
-      
-      // Apply filter
-      if (currentFilter === 'alert') merchants = merchants.filter(m => m.alert);
-      if (currentFilter === 'zero-today') merchants = merchants.filter(m => m.zeroToday);
-
-      // Sort: alerts first, then by total orders desc
-      merchants.sort((a, b) => {
-        if (a.alert && !b.alert) return -1;
-        if (!a.alert && b.alert) return 1;
-        return b.total - a.total;
-      });
-
-      const alertCount = merchants.filter(m => m.alert).length;
-
-      // Status badge
-      if (alertCount > 0) {
-        statusBadge.className = 'badge badge-danger';
-        statusBadge.innerHTML = '<span class="pulse"></span>' + alertCount + ' Alert' + (alertCount > 1 ? 's' : '');
-      } else {
-        statusBadge.className = 'badge badge-ok';
-        statusBadge.innerHTML = '● All Clear';
-      }
-
-      // Alert banner
-      if (alertCount > 0 && currentFilter !== 'alert') {
-        alertSection.innerHTML = `
-          <div class="alert-banner">
-            <span class="pulse"></span>
-            <strong>${alertCount} merchant${alertCount > 1 ? 's' : ''}</strong> have given 0 orders for 2+ consecutive days. Immediate follow-up required.
-          </div>`;
-      } else {
-        alertSection.innerHTML = '';
-      }
-
-      if (merchants.length === 0) {
-        grid.innerHTML = '<div class="empty">No merchants match the selected filter.</div>';
-        return;
-      }
-
-      const globalMax = Math.max(...merchantData.map(m => m.max), 1);
-      const dateLabels = merchantData[0]?.dates || [];
-
-      grid.innerHTML = merchants.map(m => {
-        const trendIcon = m.trend === 'up' ? '↗' : m.trend === 'down' ? '↘' : '→';
-        const trendClass = m.trend === 'up' ? 'trend-up' : m.trend === 'down' ? 'trend-down' : 'trend-flat';
-        const bars = m.orders.map((v, i) =>
-          `<div class="bar ${getBarClass(v, globalMax)}" style="height:${Math.max((v/globalMax)*100, 3)}%" data-val="${dateLabels[i] || ''}: ${v} orders"></div>`
-        ).join('');
-
-        return `
-          <div class="card ${m.alert ? 'alert' : ''}">
-            <div class="card-header">
-              <div>
-                <div class="merchant-name">${m.name}</div>
-                <div class="merchant-id">ID: ${m.id} · Onboarded: ${m.onboarding}</div>
-              </div>
-              <div class="kam-tag">${m.kam}</div>
-            </div>
-            <div class="dates">
-              <span>${dateLabels[0] || ''}</span>
-              <span>${dateLabels[dateLabels.length-1] || ''}</span>
-            </div>
-            <div class="sparkline">${bars}</div>
-            <div class="stats-row">
-              <div class="stat">
-                <span class="stat-label">Total</span>
-                <span class="stat-value">${m.total}</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Avg/Day</span>
-                <span class="stat-value">${m.avg}</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Peak</span>
-                <span class="stat-value">${m.max}</span>
-              </div>
-              <div class="stat">
-                <span class="stat-label">Trend</span>
-                <span class="stat-value ${trendClass}">${trendIcon}</span>
-              </div>
-              ${m.alert ? `<div class="stat"><span class="stat-label">Status</span><span class="stat-value" style="color:var(--red)">⚠️ Alert</span></div>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function setFilter(type) {
-      currentFilter = type;
-      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      render();
-    }
-
-    // Initial load
-    loadData();
+      totalMerchants: merchants.length,
+      dateRange: { from: dateHeaders[0] || '', to: dateHeaders[dateHeaders.length - 1] || '' }
+    }, callback);
     
-    // Auto-refresh every 60 seconds
-    autoRefreshInterval = setInterval(loadData, 60000);
-  </script>
-</body>
-</html>
+  } catch (err) {
+    return respond({ error: err.message, stack: err.stack }, callback, 500);
+  }
+}
+
+function respond(data, callback, statusCode) {
+  statusCode = statusCode || 200;
+  const json = JSON.stringify(data);
+  
+  if (callback) {
+    // JSONP response
+    const output = ContentService.createTextOutput(callback + '(' + json + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    return output;
+  } else {
+    // Regular JSON with CORS
+    const output = ContentService.createTextOutput(json)
+      .setMimeType(ContentService.MimeType.JSON);
+    return output;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TEST FUNCTIONS
+// ═════════════════════════════════════════════════════════════════════════════
+
+function testDashboardAPI() {
+  const result = doGet({ parameter: {} });
+  const content = result.getContent();
+  const data = JSON.parse(content);
+  Logger.log('=== TEST ===');
+  Logger.log('Merchants: ' + data.totalMerchants);
+  Logger.log('Date range: ' + JSON.stringify(data.dateRange));
+  if (data.merchants && data.merchants[0]) {
+    Logger.log('Sample: ' + data.merchants[0].name + ' orders=' + JSON.stringify(data.merchants[0].orders));
+  }
+  let alertCount = 0;
+  data.merchants.forEach(m => {
+    let streak = 0;
+    for (let i = m.orders.length - 1; i >= 0; i--) {
+      if (m.orders[i] === 0) streak++; else break;
+    }
+    if (streak >= 2) { alertCount++; Logger.log('ALERT: ' + m.name + ' - ' + streak + ' days zero'); }
+  });
+  Logger.log('Alerts: ' + alertCount);
+}
+
+function manualSync() {
+  syncAdTeamData();
+  SpreadsheetApp.getUi().alert('Sync done!');
+}
