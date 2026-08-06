@@ -127,6 +127,50 @@
 
   footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:36px;font-family:var(--font-mono);}
 
+  /* ---- Tabs ---- */
+  .tabnav{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .tabbtn{background:none;border:none;color:var(--text-muted);font-family:var(--font-display);font-weight:600;
+    font-size:13px;padding:10px 4px;margin-right:18px;cursor:pointer;position:relative;top:1px;
+    border-bottom:2px solid transparent;}
+  .tabbtn:hover{color:var(--text);}
+  .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---- Matrix tables (Merchant x Date / KAM x Date) ---- */
+  .matrix-wrap{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:auto;max-height:72vh;}
+  table.matrix{border-collapse:collapse;font-size:12.5px;white-space:nowrap;}
+  table.matrix thead th{position:sticky;top:0;background:var(--surface-alt);color:var(--text-faint);
+    font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;
+    border-bottom:1px solid var(--line);text-align:right;z-index:1;}
+  table.matrix thead th:first-child{position:sticky;left:0;top:0;z-index:2;text-align:left;background:var(--surface-alt);}
+  table.matrix tbody td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--font-mono);color:var(--text-muted);}
+  table.matrix tbody td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;font-family:var(--font-body);
+    color:var(--text);font-weight:500;border-right:1px solid var(--line);z-index:1;}
+  table.matrix tbody td.zero{color:var(--text-faint);opacity:.5;}
+  table.matrix tbody td.hi{color:var(--accent);font-weight:600;}
+  table.matrix tbody td.rowtotal{font-weight:600;color:var(--text);border-left:1px solid var(--line);}
+  table.matrix tbody tr:hover td{background:rgba(255,255,255,0.02);}
+  table.matrix tbody tr:hover td:first-child{background:#1a212d;}
+  table.matrix tfoot td{padding:9px 12px;font-family:var(--font-mono);font-weight:600;color:var(--text);
+    border-top:1px solid var(--line);text-align:right;background:var(--surface-alt);position:sticky;bottom:0;}
+  table.matrix tfoot td:first-child{position:sticky;left:0;bottom:0;text-align:left;background:var(--surface-alt);z-index:2;}
+
+  .matrix-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .matrix-toolbar .hint{font-size:12px;color:var(--text-faint);}
+
+  /* ---- KAM summary cards/table ---- */
+  .kam-summary-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+  .kam-summary-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);
+    font-weight:500;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-alt);}
+  .kam-summary-table thead th.num{text-align:right;}
+  .kam-summary-table tbody td{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;}
+  .kam-summary-table tbody td.num{text-align:right;font-family:var(--font-mono);}
+  .kam-summary-table tbody tr:last-child td{border-bottom:none;}
+  .kam-summary-table tbody tr:hover{background:rgba(255,255,255,0.015);}
+  .kam-summary-table .kamname{font-weight:600;font-family:var(--font-display);}
+  .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--alert-dim);color:#ffc3d0;border:1px solid rgba(255,92,122,0.4);}
+
   @media (max-width:760px){
     .stats{grid-template-columns:repeat(2,1fr);}
     table.merchants thead{display:none;}
@@ -157,23 +201,57 @@
     </div>
   </header>
 
-  <section class="stats">
-    <div class="stat"><div class="num" id="statTotal">–</div><div class="lbl">Merchants tracked</div></div>
-    <div class="stat"><div class="num" id="statToday">–</div><div class="lbl">Orders today</div></div>
-    <div class="stat alertstat"><div class="num" id="statAlerts">–</div><div class="lbl">Off 2+ days</div></div>
-    <div class="stat"><div class="num" id="statSynced">–</div><div class="lbl">Last synced</div></div>
-  </section>
-
-  <section class="alertbox empty" id="alertBox">
-    <h3><span class="alert-ring" style="display:none"></span>No merchants currently flagged</h3>
-    <div class="alert-chips" id="alertChips"></div>
-  </section>
-
-  <section id="kamSections"></section>
+  <nav class="tabnav" id="tabNav">
+    <button class="tabbtn active" data-tab="dashboard">Dashboard</button>
+    <button class="tabbtn" data-tab="merchantMatrix">Merchant × Date</button>
+    <button class="tabbtn" data-tab="kamSummary">KAM Summary</button>
+    <button class="tabbtn" data-tab="kamMatrix">KAM × Date</button>
+  </nav>
 
   <div class="empty-state" id="emptyState" style="display:none;">
     <div class="big">Not connected yet</div>
     <div>Paste your Apps Script Web App URL into <code>CONFIG.WEB_APP_URL</code> near the top of this file, then redeploy.</div>
+  </div>
+
+  <!-- ===== Tab: Dashboard (original view) ===== -->
+  <div class="tab-panel active" id="panel-dashboard">
+    <section class="stats">
+      <div class="stat"><div class="num" id="statTotal">–</div><div class="lbl">Merchants tracked</div></div>
+      <div class="stat"><div class="num" id="statToday">–</div><div class="lbl">Orders today</div></div>
+      <div class="stat alertstat"><div class="num" id="statAlerts">–</div><div class="lbl">Off 2+ days</div></div>
+      <div class="stat"><div class="num" id="statSynced">–</div><div class="lbl">Last synced</div></div>
+    </section>
+
+    <section class="alertbox empty" id="alertBox">
+      <h3><span class="alert-ring" style="display:none"></span>No merchants currently flagged</h3>
+      <div class="alert-chips" id="alertChips"></div>
+    </section>
+
+    <section id="kamSections"></section>
+  </div>
+
+  <!-- ===== Tab: Merchant x Date matrix ===== -->
+  <div class="tab-panel" id="panel-merchantMatrix">
+    <div class="matrix-toolbar">
+      <span class="hint">Order count per merchant, per day. Scroll to see the full date range.</span>
+    </div>
+    <div class="matrix-wrap"><table class="matrix" id="merchantMatrixTable"></table></div>
+  </div>
+
+  <!-- ===== Tab: KAM summary ===== -->
+  <div class="tab-panel" id="panel-kamSummary">
+    <div class="matrix-toolbar">
+      <span class="hint">Totals per KAM across the current date window.</span>
+    </div>
+    <table class="kam-summary-table" id="kamSummaryTable"></table>
+  </div>
+
+  <!-- ===== Tab: KAM x Date matrix ===== -->
+  <div class="tab-panel" id="panel-kamMatrix">
+    <div class="matrix-toolbar">
+      <span class="hint">Combined order count of every merchant under each KAM, per day.</span>
+    </div>
+    <div class="matrix-wrap"><table class="matrix" id="kamMatrixTable"></table></div>
   </div>
 
   <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
@@ -220,7 +298,7 @@ async function loadData(){
     STATE.dates = json.dates || [];
     STATE.merchants = json.merchants || [];
     document.getElementById('emptyState').style.display = 'none';
-    render();
+    renderActiveTab();
   } catch(err){
     console.error(err);
     document.getElementById('emptyState').style.display = 'block';
@@ -389,8 +467,164 @@ function render(){
   });
 }
 
-document.getElementById('searchInput').addEventListener('input', render);
-document.getElementById('kamFilter').addEventListener('change', render);
+/* =========================================================
+   Tab switching
+   ========================================================= */
+document.getElementById('tabNav').addEventListener('click', (e) => {
+  const btn = e.target.closest('.tabbtn');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  renderActiveTab(tab);
+});
+
+function activeTab(){
+  const btn = document.querySelector('.tabbtn.active');
+  return btn ? btn.dataset.tab : 'dashboard';
+}
+
+function renderActiveTab(tab){
+  tab = tab || activeTab();
+  if (tab === 'dashboard') render();
+  else if (tab === 'merchantMatrix') renderMerchantMatrix();
+  else if (tab === 'kamSummary') renderKamSummary();
+  else if (tab === 'kamMatrix') renderKamMatrix();
+}
+
+/* =========================================================
+   Tab: Merchant x Date matrix
+   ========================================================= */
+function renderMerchantMatrix(){
+  const table = document.getElementById('merchantMatrixTable');
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const kamPick = document.getElementById('kamFilter').value;
+  let rows = STATE.merchants.filter(m => {
+    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
+    if (search){
+      const hay = (m.businessName + " " + m.businessId).toLowerCase();
+      if (hay.indexOf(search) === -1) return false;
+    }
+    return true;
+  }).sort((a,b)=>a.businessName.localeCompare(b.businessName));
+
+  const dates = STATE.dates;
+  const thead = `<thead><tr>
+      <th>Merchant</th>
+      ${dates.map(d => `<th>${fmtDate(d)}</th>`).join('')}
+      <th>Total</th>
+    </tr></thead>`;
+
+  const colTotals = dates.map(() => 0);
+  let grandTotal = 0;
+
+  const bodyRows = rows.map(m => {
+    let rowTotal = 0;
+    const cells = dates.map((d,i) => {
+      const v = Number(m.orders[i]) || 0;
+      rowTotal += v;
+      colTotals[i] += v;
+      const cls = v === 0 ? 'zero' : (v >= 10 ? 'hi' : '');
+      return `<td class="${cls}">${m.orders[i] === null || m.orders[i] === undefined ? '–' : v}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    return `<tr><td>${m.businessName}<br><span class="mid">#${m.businessId}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+  }).join('');
+
+  const tfoot = `<tfoot><tr>
+      <td>Total</td>
+      ${colTotals.map(t => `<td>${t}</td>`).join('')}
+      <td>${grandTotal}</td>
+    </tr></tfoot>`;
+
+  table.innerHTML = thead + `<tbody>${bodyRows || '<tr><td colspan="1">No merchants match the current filter.</td></tr>'}</tbody>` + tfoot;
+}
+
+/* =========================================================
+   Tab: KAM summary (KAM #1 / KAM #2 style rollup)
+   ========================================================= */
+function renderKamSummary(){
+  const table = document.getElementById('kamSummaryTable');
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+
+  const groups = buildGroups(STATE.merchants);
+  const todayIdx = STATE.dates.length - 1;
+
+  const thead = `<thead><tr>
+      <th>KAM</th>
+      <th class="num">Merchants</th>
+      <th class="num">Orders today</th>
+      <th class="num">Total (window)</th>
+      <th class="num">Avg / merchant</th>
+      <th class="num">Flagged</th>
+    </tr></thead>`;
+
+  const rows = Object.keys(groups).sort().map(kam => {
+    const list = groups[kam];
+    const today = list.reduce((s,m)=> s + (Number(m.orders[todayIdx]) || 0), 0);
+    const total = list.reduce((s,m)=> s + m.orders.reduce((a,v)=> a + (Number(v)||0), 0), 0);
+    const flagged = list.filter(m => isFlagged(m.orders)).length;
+    const avg = list.length ? (total / list.length).toFixed(1) : '0.0';
+    return `<tr>
+        <td class="kamname">${kam}</td>
+        <td class="num">${list.length}</td>
+        <td class="num">${today}</td>
+        <td class="num">${total}</td>
+        <td class="num">${avg}</td>
+        <td class="num">${flagged ? `<span class="miniflag">${flagged} off</span>` : '–'}</td>
+      </tr>`;
+  }).join('');
+
+  table.innerHTML = thead + `<tbody>${rows}</tbody>`;
+}
+
+/* =========================================================
+   Tab: KAM x Date matrix (each KAM's combined orders per day)
+   ========================================================= */
+function renderKamMatrix(){
+  const table = document.getElementById('kamMatrixTable');
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+
+  const groups = buildGroups(STATE.merchants);
+  const dates = STATE.dates;
+  const kams = Object.keys(groups).sort();
+
+  const thead = `<thead><tr>
+      <th>KAM</th>
+      ${dates.map(d => `<th>${fmtDate(d)}</th>`).join('')}
+      <th>Total</th>
+    </tr></thead>`;
+
+  const colTotals = dates.map(() => 0);
+  let grandTotal = 0;
+
+  const bodyRows = kams.map(kam => {
+    const list = groups[kam];
+    let rowTotal = 0;
+    const cells = dates.map((d,i) => {
+      const v = list.reduce((s,m)=> s + (Number(m.orders[i]) || 0), 0);
+      rowTotal += v;
+      colTotals[i] += v;
+      const cls = v === 0 ? 'zero' : (v >= 20 ? 'hi' : '');
+      return `<td class="${cls}">${v}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    return `<tr><td>${kam} <span class="mid">(${list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+  }).join('');
+
+  const tfoot = `<tfoot><tr>
+      <td>Total</td>
+      ${colTotals.map(t => `<td>${t}</td>`).join('')}
+      <td>${grandTotal}</td>
+    </tr></tfoot>`;
+
+  table.innerHTML = thead + `<tbody>${bodyRows}</tbody>` + tfoot;
+}
+
+document.getElementById('searchInput').addEventListener('input', () => renderActiveTab());
+document.getElementById('kamFilter').addEventListener('change', () => renderActiveTab());
 document.getElementById('refreshBtn').addEventListener('click', loadData);
 
 loadData();
