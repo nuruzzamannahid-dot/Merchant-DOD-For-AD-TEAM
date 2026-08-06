@@ -1,43 +1,63 @@
 const express = require('express');
 const path = require('path');
+const { createClient } = require('@libsql/client');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Your Apps Script Web App URL. Can be overridden via an env var on Render
-// (Environment tab) so you never have to touch code if it changes.
-const WEB_APP_URL = process.env.WEB_APP_URL ||
-  "https://script.google.com/macros/s/AKfycbxoY-Zcp2I3DPP_XbS_tJNOCnbY7p26Rdd3WeLIuV1JFBO0P1fZrv6Q6hxVADmHZ8aX/exec";
+// Set these in Render's Environment tab (Settings → Environment).
+// Never hardcode them in this file.
+const turso = createClient({
+  url: process.env.TURSO_URL,
+  authToken: process.env.TURSO_TOKEN
+});
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
-// The dashboard calls this same-origin endpoint. This server fetches
-// the Apps Script URL itself (server-to-server, no CORS restriction)
-// and hands the JSON back to the browser.
+async function ensureSchema() {
+  await turso.execute(`
+    CREATE TABLE IF NOT EXISTS dashboard_data (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      payload TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+}
+
+// The dashboard calls this same-origin endpoint. Data is read from
+// Turso, which Apps Script keeps fresh on its own timer — so this
+// responds instantly and never waits on Apps Script directly.
 app.get('/api/data', async (req, res) => {
   try {
-    const upstream = await fetch(WEB_APP_URL, { redirect: 'follow' });
-    if (!upstream.ok) {
-      throw new Error(`Upstream responded with ${upstream.status}`);
+    const result = await turso.execute('SELECT payload, updated_at FROM dashboard_data WHERE id = 1');
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: 'No data yet — the Apps Script push trigger may not have run.'
+      });
     }
-    const contentType = upstream.headers.get('content-type') || '';
-    if (!contentType.includes('application/json')) {
-      // Usually means Apps Script returned a Google sign-in/consent page
-      // instead of JSON — the deployment access setting isn't public.
-      throw new Error('Upstream did not return JSON (deployment may not be public)');
-    }
-    const data = await upstream.json();
+    const row = result.rows[0];
+    const data = JSON.parse(row.payload);
     res.set('Cache-Control', 'no-store');
     res.json(data);
   } catch (err) {
-    console.error('Failed to fetch AD TEAM DATA:', err);
+    console.error('Failed to read from Turso:', err);
     res.status(502).json({
-      error: 'Failed to fetch data from Apps Script',
+      error: 'Failed to fetch data from Turso',
       detail: String(err)
     });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Merchant Pulse server running on port ${PORT}`);
-});
+ensureSchema()
+  .then(() => {
+    console.log('Turso schema ready.');
+    app.listen(PORT, () => {
+      console.log(`Merchant Pulse server running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to set up Turso schema — starting anyway:', err);
+    app.listen(PORT, () => {
+      console.log(`Merchant Pulse server running on port ${PORT}`);
+    });
+  });
