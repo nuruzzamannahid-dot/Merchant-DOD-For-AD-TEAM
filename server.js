@@ -12,7 +12,7 @@ const turso = createClient({
   authToken: process.env.TURSO_TOKEN
 });
 
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 async function ensureSchema() {
   await turso.execute(`
