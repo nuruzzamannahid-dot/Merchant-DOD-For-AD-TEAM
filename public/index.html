@@ -279,10 +279,31 @@ function fmtDate(iso){
 }
 
 function isFlagged(orders){
+  orders = safeOrders(orders);
   const n = orders.length;
   if (n < CONFIG.ALERT_DAYS) return false;
   const tail = orders.slice(n - CONFIG.ALERT_DAYS);
   return tail.every(v => v === 0);
+}
+
+// Some rows in the source sheet can have a missing/short/non-array
+// orders field — never let that throw and blank out an entire tab.
+function safeOrders(orders){
+  return Array.isArray(orders) ? orders : [];
+}
+
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+// Renders an error message inside a container instead of leaving it
+// blank, so a bad row can never make a whole tab silently disappear.
+function renderTabError(el, err){
+  console.error(err);
+  el.innerHTML = `<div class="empty-state"><div class="big">Couldn't render this tab</div>
+    <div>${esc(err && err.message ? err.message : err)}</div></div>`;
 }
 
 async function loadData(){
@@ -333,6 +354,11 @@ function populateKamFilter(groups){
 }
 
 function render(){
+  try { renderDashboardInner(); }
+  catch(err){ renderTabError(document.getElementById('kamSections'), err); }
+}
+
+function renderDashboardInner(){
   const search = document.getElementById('searchInput').value.trim().toLowerCase();
   const kamPick = document.getElementById('kamFilter').value;
 
@@ -351,7 +377,7 @@ function render(){
 
   // ---- stats ----
   const todayIdx = STATE.dates.length - 1;
-  const todayTotal = STATE.merchants.reduce((sum,m) => sum + (Number(m.orders[todayIdx]) || 0), 0);
+  const todayTotal = STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[todayIdx]) || 0), 0);
   const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
   document.getElementById('statTotal').textContent = STATE.merchants.length;
   document.getElementById('statToday').textContent = todayTotal;
@@ -373,7 +399,7 @@ function render(){
       .forEach(m => {
         const c = document.createElement('div');
         c.className = 'chip';
-        c.innerHTML = `<b>${m.businessName}</b> <span>· ${m.assignedKam || 'Unassigned'}</span>`;
+        c.innerHTML = `<b>${esc(m.businessName)}</b> <span>· ${esc(m.assignedKam || 'Unassigned')}</span>`;
         chipWrap.appendChild(c);
       });
   } else {
@@ -425,10 +451,11 @@ function render(){
     const tbody = table.querySelector('tbody');
 
     rows.forEach(m => {
-      const flag = isFlagged(m.orders);
-      const orderWindow = m.orders.slice(last7start);
-      const todayVal = m.orders[m.orders.length-1];
-      const yestVal = m.orders.length > 1 ? m.orders[m.orders.length-2] : null;
+      const orders = safeOrders(m.orders);
+      const flag = isFlagged(orders);
+      const orderWindow = orders.slice(last7start);
+      const todayVal = orders[orders.length-1];
+      const yestVal = orders.length > 1 ? orders[orders.length-2] : null;
       let deltaHtml = '';
       if (yestVal !== null && yestVal !== undefined){
         const diff = (todayVal||0) - (yestVal||0);
@@ -452,8 +479,8 @@ function render(){
       if (flag) tr.className = 'flagged';
       tr.innerHTML = `
         <td>
-          <div class="mname">${m.businessName}</div>
-          <div class="mid">#${m.businessId}</div>
+          <div class="mname">${esc(m.businessName)}</div>
+          <div class="mid">#${esc(m.businessId)}</div>
         </td>
         <td><div class="pulse">${dots}</div></td>
         <td><span class="today-val ${(!todayVal)?'zero':''}">${todayVal ?? '–'}</span>${deltaHtml}</td>
@@ -497,6 +524,11 @@ function renderActiveTab(tab){
    ========================================================= */
 function renderMerchantMatrix(){
   const table = document.getElementById('merchantMatrixTable');
+  try { renderMerchantMatrixInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+
+function renderMerchantMatrixInner(table){
   if (!STATE.merchants.length){ table.innerHTML = ''; return; }
 
   const search = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -523,14 +555,15 @@ function renderMerchantMatrix(){
   const bodyRows = rows.map(m => {
     let rowTotal = 0;
     const cells = dates.map((d,i) => {
-      const v = Number(m.orders[i]) || 0;
+      const orders = safeOrders(m.orders);
+      const v = Number(orders[i]) || 0;
       rowTotal += v;
       colTotals[i] += v;
       const cls = v === 0 ? 'zero' : (v >= 10 ? 'hi' : '');
-      return `<td class="${cls}">${m.orders[i] === null || m.orders[i] === undefined ? '–' : v}</td>`;
+      return `<td class="${cls}">${orders[i] === null || orders[i] === undefined ? '–' : v}</td>`;
     }).join('');
     grandTotal += rowTotal;
-    return `<tr><td>${m.businessName}<br><span class="mid">#${m.businessId}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+    return `<tr><td>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
   }).join('');
 
   const tfoot = `<tfoot><tr>
@@ -547,6 +580,11 @@ function renderMerchantMatrix(){
    ========================================================= */
 function renderKamSummary(){
   const table = document.getElementById('kamSummaryTable');
+  try { renderKamSummaryInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+
+function renderKamSummaryInner(table){
   if (!STATE.merchants.length){ table.innerHTML = ''; return; }
 
   const groups = buildGroups(STATE.merchants);
@@ -563,12 +601,12 @@ function renderKamSummary(){
 
   const rows = Object.keys(groups).sort().map(kam => {
     const list = groups[kam];
-    const today = list.reduce((s,m)=> s + (Number(m.orders[todayIdx]) || 0), 0);
-    const total = list.reduce((s,m)=> s + m.orders.reduce((a,v)=> a + (Number(v)||0), 0), 0);
+    const today = list.reduce((s,m)=> s + (Number(safeOrders(m.orders)[todayIdx]) || 0), 0);
+    const total = list.reduce((s,m)=> s + safeOrders(m.orders).reduce((a,v)=> a + (Number(v)||0), 0), 0);
     const flagged = list.filter(m => isFlagged(m.orders)).length;
     const avg = list.length ? (total / list.length).toFixed(1) : '0.0';
     return `<tr>
-        <td class="kamname">${kam}</td>
+        <td class="kamname">${esc(kam)}</td>
         <td class="num">${list.length}</td>
         <td class="num">${today}</td>
         <td class="num">${total}</td>
@@ -585,6 +623,11 @@ function renderKamSummary(){
    ========================================================= */
 function renderKamMatrix(){
   const table = document.getElementById('kamMatrixTable');
+  try { renderKamMatrixInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+
+function renderKamMatrixInner(table){
   if (!STATE.merchants.length){ table.innerHTML = ''; return; }
 
   const groups = buildGroups(STATE.merchants);
@@ -604,14 +647,14 @@ function renderKamMatrix(){
     const list = groups[kam];
     let rowTotal = 0;
     const cells = dates.map((d,i) => {
-      const v = list.reduce((s,m)=> s + (Number(m.orders[i]) || 0), 0);
+      const v = list.reduce((s,m)=> s + (Number(safeOrders(m.orders)[i]) || 0), 0);
       rowTotal += v;
       colTotals[i] += v;
       const cls = v === 0 ? 'zero' : (v >= 20 ? 'hi' : '');
       return `<td class="${cls}">${v}</td>`;
     }).join('');
     grandTotal += rowTotal;
-    return `<tr><td>${kam} <span class="mid">(${list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+    return `<tr><td>${esc(kam)} <span class="mid">(${list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
   }).join('');
 
   const tfoot = `<tfoot><tr>
