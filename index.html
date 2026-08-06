@@ -181,12 +181,12 @@
 
 <script>
 /* =========================================================
-   CONFIG — paste your Apps Script Web App URL below.
-   (Extensions > Apps Script > Deploy > New deployment > Web app
-    → Execute as: Me, Who has access: Anyone with the link)
+   CONFIG — data now comes from this server's own /api/data
+   endpoint, which fetches the Apps Script URL server-side
+   (avoids the browser CORS block on Google's redirect).
    ========================================================= */
 const CONFIG = {
-  WEB_APP_URL: "https://script.google.com/macros/s/AKfycbxoY-Zcp2I3DPP_XbS_tJNOCnbY7p26Rdd3WeLIuV1JFBO0P1fZrv6Q6hxVADmHZ8aX/exec",
+  WEB_APP_URL: "/api/data",
   REFRESH_MS: 5 * 60 * 1000,   // auto-refresh every 5 minutes
   ALERT_DAYS: 2                 // consecutive zero-order days that trigger an alert
 };
