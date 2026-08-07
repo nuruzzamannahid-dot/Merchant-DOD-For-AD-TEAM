@@ -12,233 +12,348 @@
   (function(){
     var theme = 'light';
     try {
-      var saved = localStorage.getItem('merchantPulseTheme');
+      var saved = localStorage.getItem('merchantPulse:theme');
       if (saved === 'dark') theme = 'dark';
     } catch (e) { /* storage unavailable — fall back to default light */ }
     document.documentElement.setAttribute('data-theme', theme);
   })();
 </script>
 <style>
+  /* =========================================================
+     Design tokens — Modern SaaS. Light default, dark via
+     [data-theme="dark"].
+     ========================================================= */
   :root{
-    /* Light theme — the default */
     --bg:#F6F8FA;
     --surface:#FFFFFF;
-    --surface-alt:#F1F4F7;
-    --line:#E2E7ED;
-    --text:#161B22;
-    --text-muted:#5B6472;
-    --text-faint:#8A94A3;
+    --surface-2:#F5F7F9;
+    --surface-3:#EFF2F5;
+    --line:#E5E9EF;
+    --line-strong:#D6DBE3;
+    --text:#12161D;
+    --text-2:#4B5665;
+    --text-3:#7A8494;
+    --text-4:#98A2B1;
     --accent:#0EA37A;
-    --accent-dim:#D3F3E7;
-    --alert:#E0355A;
-    --alert-dim:#FCE3E9;
+    --accent-strong:#0B8A66;
+    --accent-dim:#D9F2E9;
+    --accent-bg:#EAF8F2;
+    --alert:#D92D5B;
+    --alert-strong:#B31F47;
+    --alert-dim:#FBE4EB;
+    --alert-bg:#FCF0F3;
     --warn:#B9770E;
+    --warn-dim:#FBEED9;
     --bg-rgb:246,248,250;
-    --alert-text-strong:#7A1030;
-    --alert-text:#9C1F3E;
-    --alert-text-soft:#B23859;
-    --row-hover:rgba(15,23,32,0.035);
-    --hover-strong:#E9EDF2;
-    --sticky-hover:#EEF1F5;
+    --shadow-sm:0 1px 2px rgba(16,20,26,0.05), 0 1px 1px rgba(16,20,26,0.03);
+    --shadow-md:0 1px 2px rgba(16,20,26,0.04), 0 4px 16px rgba(16,20,26,0.06);
+    --shadow-lg:0 6px 24px rgba(16,20,26,0.10), 0 2px 8px rgba(16,20,26,0.06);
+    --focus-ring:0 0 0 3px rgba(14,163,122,0.22);
+    --radius-sm:7px;
     --radius:10px;
+    --radius-lg:14px;
+    --row-hover:rgba(15,23,32,0.035);
     --font-display:'Space Grotesk', sans-serif;
     --font-mono:'IBM Plex Mono', monospace;
     --font-body:'Inter', sans-serif;
+    --ease:cubic-bezier(.22,.61,.36,1);
   }
   [data-theme="dark"]{
-    --bg:#0B0E14;
-    --surface:#131822;
-    --surface-alt:#1B212C;
-    --line:#232A37;
-    --text:#E8ECF1;
-    --text-muted:#8B93A1;
-    --text-faint:#565F6E;
+    --bg:#0B0E15;
+    --surface:#141923;
+    --surface-2:#1A202C;
+    --surface-3:#202735;
+    --line:#222A38;
+    --line-strong:#2C3545;
+    --text:#E9EDF3;
+    --text-2:#97A1B2;
+    --text-3:#6C7686;
+    --text-4:#4E5766;
     --accent:#33D6A6;
-    --accent-dim:#1F5F4D;
+    --accent-strong:#4AE0B5;
+    --accent-dim:#1B4F42;
+    --accent-bg:#10261F;
     --alert:#FF5C7A;
-    --alert-dim:#4A1F2A;
+    --alert-strong:#FF7B93;
+    --alert-dim:#43212D;
+    --alert-bg:#2A1820;
     --warn:#F2B84B;
-    --bg-rgb:11,14,20;
-    --alert-text-strong:#ffffff;
-    --alert-text:#ffc3d0;
-    --alert-text-soft:#ff9fb2;
-    --row-hover:rgba(255,255,255,0.015);
-    --hover-strong:#212836;
-    --sticky-hover:#1a212d;
+    --warn-dim:#3A2C14;
+    --bg-rgb:11,14,21;
+    --row-hover:rgba(255,255,255,0.02);
+    --focus-ring:0 0 0 3px rgba(51,214,166,0.25);
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;
-    transition:background-color .15s ease, color .15s ease;}
+    font-size:14px;line-height:1.45;transition:background-color .15s ease, color .15s ease;}
   ::selection{background:var(--accent-dim);color:var(--text);}
+  :focus{outline:none;}
+  :focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:6px;}
 
-  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 80px;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px 80px;}
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--surface);color:var(--accent);
+    padding:8px 14px;border-radius:0 0 8px 0;z-index:200;font-weight:600;font-size:13px;}
+  .skip-link:focus{left:0;box-shadow:var(--focus-ring);}
 
-  /* ---- Header ---- */
-  header.top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px;flex-wrap:wrap;}
+  /* ---- Header / sticky toolbar ---- */
+  header.top{position:sticky;top:0;z-index:90;background:rgba(var(--bg-rgb),0.82);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;gap:20px;
+    flex-wrap:wrap;padding:16px 0;margin:0 -8px 10px;padding-left:8px;padding-right:8px;border-bottom:1px solid var(--line);}
   .brand{display:flex;align-items:center;gap:12px;}
-  .brand-mark{width:38px;height:38px;border-radius:9px;background:linear-gradient(155deg,var(--accent),#1a9e7a);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;}
+  .brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(155deg,var(--accent),var(--accent-strong));
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;box-shadow:var(--shadow-sm);}
   .brand-mark::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--bg);position:absolute;}
   .brand-mark::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(var(--bg-rgb),0.55);position:absolute;animation:sonar 2.4s ease-out infinite;}
   @keyframes sonar{0%{transform:scale(0.5);opacity:.9;}100%{transform:scale(1.6);opacity:0;}}
-  .brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;margin:0;letter-spacing:-0.01em;}
-  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--text-muted);}
+  .brand h1{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;letter-spacing:-0.01em;line-height:1.1;}
+  .brand p{margin:2px 0 0;font-size:12px;color:var(--text-3);}
 
   .top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-  .pill-input, select.pill-input{background:var(--surface);border:1px solid var(--line);color:var(--text);
-    font-family:var(--font-body);font-size:13px;padding:9px 14px;border-radius:20px;outline:none;}
-  .pill-input::placeholder{color:var(--text-faint);}
-  .pill-input:focus{border-color:var(--accent-dim);}
-  select.pill-input{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:30px;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238B93A1'/></svg>");
-    background-repeat:no-repeat;background-position:right 12px center;}
-  button.refresh{background:var(--surface);border:1px solid var(--line);color:var(--text-muted);
-    font-family:var(--font-body);font-size:13px;padding:9px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:7px;}
-  button.refresh:hover{color:var(--text);border-color:var(--accent-dim);}
-  button.refresh .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
-  button.refresh.loading .dot{animation:pulse-dot 0.9s ease-in-out infinite;}
-  @keyframes pulse-dot{0%,100%{opacity:.25;}50%{opacity:1;}}
+  .field{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:0 6px 0 13px;height:38px;box-shadow:var(--shadow-sm);transition:border-color .15s, box-shadow .15s;}
+  .field:focus-within{border-color:var(--accent);box-shadow:var(--focus-ring);}
+  .field svg{width:15px;height:15px;color:var(--text-4);flex-shrink:0;margin-top:1px;}
+  .field input{border:none;background:transparent;color:var(--text);font-family:var(--font-body);font-size:13px;
+    outline:none;width:170px;height:100%;}
+  .field input::placeholder{color:var(--text-4);}
+  .field input:focus{box-shadow:none;}
+  select.pill-input{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    font-family:var(--font-body);font-size:13px;padding:8px 30px 8px 13px;height:38px;border-radius:20px;outline:none;
+    box-shadow:var(--shadow-sm);cursor:pointer;appearance:none;-webkit-appearance:none;transition:border-color .15s;}
+  select.pill-input:focus{border-color:var(--accent);box-shadow:var(--focus-ring);}
+  select.pill-input:hover{border-color:var(--line-strong);}
+  select.pill-input{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B7686'/></svg>");
+    background-repeat:no-repeat;background-position:right 13px center;}
 
-  .theme-toggle{width:36px;height:36px;flex-shrink:0;border-radius:50%;background:var(--surface);
-    border:1px solid var(--line);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;
-    justify-content:center;padding:0;}
-  .theme-toggle:hover{color:var(--text);border-color:var(--accent-dim);}
+  button.refresh{background:var(--surface);border:1px solid var(--line);color:var(--text-2);
+    font-family:var(--font-body);font-size:13px;padding:0 14px;height:38px;border-radius:20px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm);transition:color .15s, border-color .15s, transform .05s;}
+  button.refresh:hover{color:var(--text);border-color:var(--accent);}
+  button.refresh:active{transform:translateY(1px);}
+  button.refresh .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  button.refresh.loading .dot{animation:pulse-dot 0.9s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:.2;}50%{opacity:1;}}
+  button.refresh .auto{font-family:var(--font-mono);font-size:11px;color:var(--text-4);border-left:1px solid var(--line);
+    padding-left:8px;}
+
+  .theme-toggle{width:38px;height:38px;flex-shrink:0;border-radius:50%;background:var(--surface);
+    border:1px solid var(--line);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;box-shadow:var(--shadow-sm);transition:color .15s, border-color .15s;}
+  .theme-toggle:hover{color:var(--text);border-color:var(--accent);}
   .theme-toggle svg{width:16px;height:16px;}
   .theme-toggle .icon-moon{display:none;}
   [data-theme="dark"] .theme-toggle .icon-sun{display:none;}
   [data-theme="dark"] .theme-toggle .icon-moon{display:block;}
 
+  /* ---- Status banners ---- */
+  .banner{display:none;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;
+    font-size:13.5px;box-shadow:var(--shadow-sm);}
+  .banner.show{display:flex;}
+  .banner .b-msg{flex:1;}
+  .banner.error{background:var(--alert-bg);border:1px solid var(--alert-dim);color:var(--alert-strong);}
+  .banner.error strong{color:var(--alert-strong);}
+  .banner.stale{background:var(--warn-dim);border:1px solid rgba(185,119,14,.3);color:#8a5c0a;}
+  [data-theme="dark"] .banner.stale{color:#f4c877;}
+  .banner .b-action{flex-shrink:0;}
+  button.b-btn{font-family:var(--font-body);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;}
+  button.b-btn.retry{background:var(--alert-strong);border:1px solid var(--alert-strong);color:#fff;}
+  button.b-btn.retry:hover{background:var(--alert);}
+  button.b-btn.dismiss{background:transparent;border:1px solid var(--line-strong);color:var(--text-3);}
+  button.b-btn.dismiss:hover{color:var(--text);}
+
   /* ---- Stat strip ---- */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
-  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
-  .stat .num{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1;}
-  .stat .lbl{font-size:12px;color:var(--text-muted);margin-top:6px;}
-  .stat.alertstat .num{color:var(--alert);}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;
+    box-shadow:var(--shadow-sm);transition:box-shadow .15s, transform .15s, border-color .15s;}
+  .stat:hover{box-shadow:var(--shadow-md);border-color:var(--line-strong);}
+  .stat .stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .stat .stat-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:var(--accent-bg);color:var(--accent);}
+  .stat .stat-icon svg{width:15px;height:15px;}
+  .stat .lbl{font-size:12px;color:var(--text-3);font-weight:500;}
+  .stat .num{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em;}
+  .stat .num small{font-size:15px;color:var(--text-3);font-weight:600;margin-left:2px;}
+  .stat .trend{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11.5px;margin-top:9px;padding:3px 8px;border-radius:20px;}
+  .stat .trend.up{color:var(--accent-strong);background:var(--accent-bg);}
+  .stat .trend.down{color:var(--alert-strong);background:var(--alert-bg);}
+  .stat .trend.flat{color:var(--text-3);background:var(--surface-3);}
   .stat.alertstat{border-color:var(--alert-dim);}
+  .stat.alertstat .num{color:var(--alert);}
+  .stat.alertstat .stat-icon{background:var(--alert-bg);color:var(--alert);}
+
+  /* ---- Skeleton ---- */
+  .skel{border-radius:8px;background:linear-gradient(90deg,var(--surface-3) 25%,var(--surface-2) 50%,var(--surface-3) 75%);
+    background-size:200% 100%;animation:shimmer 1.4s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .skel.num{width:70px;height:26px;margin-top:4px;}
+  .skel.line{width:90px;height:12px;}
 
   /* ---- Alert rail ---- */
-  .alertbox{border:1px solid var(--alert-dim);background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));
-    border-radius:var(--radius);padding:14px 16px 6px;margin-bottom:24px;}
+  .alertbox{border:1px solid var(--alert-dim);background:linear-gradient(180deg, rgba(217,45,91,0.06), rgba(217,45,91,0.01));
+    border-radius:var(--radius-lg);padding:14px 16px 8px;margin-bottom:22px;box-shadow:var(--shadow-sm);}
+  [data-theme="dark"] .alertbox{background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));}
   .alertbox.empty{border-color:var(--line);background:var(--surface);}
   .alertbox h3{font-family:var(--font-display);font-size:13px;margin:0 0 10px;display:flex;align-items:center;gap:8px;
-    color:var(--alert);text-transform:uppercase;letter-spacing:.06em;}
-  .alertbox.empty h3{color:var(--text-muted);}
+    color:var(--alert);text-transform:uppercase;letter-spacing:.05em;}
+  .alertbox.empty h3{color:var(--text-3);}
   .alert-ring{width:8px;height:8px;border-radius:50%;border:2px solid var(--alert);position:relative;flex-shrink:0;}
   .alert-ring::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--alert);animation:sonar 1.6s ease-out infinite;}
-  .alert-chips{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:12px;}
-  .chip{font-family:var(--font-mono);font-size:12px;background:var(--alert-dim);color:var(--alert-text);padding:6px 10px;border-radius:7px;
-    border:1px solid rgba(255,92,122,0.35);white-space:nowrap;}
-  .chip b{color:var(--alert-text-strong);font-weight:600;}
-  .chip span{color:var(--alert-text-soft);opacity:.85;}
+  .alert-chips{display:flex;flex-wrap:wrap;gap:9px;padding-bottom:12px;}
+  .chip{font-family:var(--font-body);font-size:12.5px;background:var(--surface);color:var(--text);
+    padding:7px 11px;border-radius:9px;border:1px solid var(--alert-dim);display:flex;align-items:center;gap:7px;
+    box-shadow:var(--shadow-sm);}
+  .chip .chip-dot{width:7px;height:7px;border-radius:50%;background:var(--alert);flex-shrink:0;}
+  .chip b{color:var(--text);font-weight:600;}
+  .chip span{color:var(--text-3);font-size:12px;}
+  .chip .chip-meta{color:var(--text-4);font-family:var(--font-mono);font-size:11px;}
 
   /* ---- KAM section ---- */
-  .kam-section{margin-bottom:18px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);}
-  .kam-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none;
-    background:var(--surface-alt);}
-  .kam-head:hover{background:var(--hover-strong);}
-  .kam-head .left{display:flex;align-items:center;gap:10px;}
-  .kam-head .caret{font-size:10px;color:var(--text-faint);transition:transform .15s ease;}
+  .kam-section{margin-bottom:18px;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;
+    background:var(--surface);box-shadow:var(--shadow-sm);}
+  .kam-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;
+    background:var(--surface-2);transition:background .12s;}
+  .kam-head:hover{background:var(--surface-3);}
+  .kam-head .left{display:flex;align-items:center;gap:11px;}
+  .kam-head .caret{font-size:10px;color:var(--text-4);transition:transform .15s var(--ease);width:8px;}
   .kam-section.collapsed .caret{transform:rotate(-90deg);}
   .kam-head .name{font-family:var(--font-display);font-weight:600;font-size:14.5px;}
-  .kam-head .count{font-family:var(--font-mono);font-size:11.5px;color:var(--text-muted);background:var(--surface);
-    border:1px solid var(--line);padding:2px 8px;border-radius:10px;}
-  .kam-head .kam-alert{font-family:var(--font-mono);font-size:11.5px;color:var(--alert);background:var(--alert-dim);
-    border:1px solid rgba(255,92,122,0.35);padding:2px 8px;border-radius:10px;}
+  .kam-head .count{font-family:var(--font-mono);font-size:11.5px;color:var(--text-3);background:var(--surface);
+    border:1px solid var(--line);padding:2px 9px;border-radius:20px;}
+  .kam-head .kam-alert{font-family:var(--font-mono);font-size:11.5px;color:var(--alert);background:var(--alert-bg);
+    border:1px solid var(--alert-dim);padding:2px 9px;border-radius:20px;}
 
   table.merchants{width:100%;border-collapse:collapse;}
   .kam-section.collapsed table.merchants{display:none;}
-  table.merchants thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);
-    font-weight:500;padding:10px 16px 8px;border-bottom:1px solid var(--line);}
-  table.merchants tbody td{padding:11px 16px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  table.merchants thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);
+    font-weight:600;padding:11px 18px 9px;border-bottom:1px solid var(--line);}
+  table.merchants tbody td{padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
   table.merchants tbody tr:last-child td{border-bottom:none;}
+  table.merchants tbody tr{transition:background .12s;}
   table.merchants tbody tr:hover{background:var(--row-hover);}
-  table.merchants tbody tr.flagged{background:rgba(255,92,122,0.045);}
-  .mname{font-weight:500;}
-  .mid{font-family:var(--font-mono);color:var(--text-faint);font-size:11.5px;}
-  .today-val{font-family:var(--font-mono);font-size:14px;font-weight:600;}
-  .today-val.zero{color:var(--text-faint);}
-  .delta{font-family:var(--font-mono);font-size:11.5px;margin-left:6px;}
-  .delta.up{color:var(--accent);}
+  table.merchants tbody tr.flagged{background:var(--alert-bg);}
+  table.merchants tbody tr.flagged:hover{background:var(--alert-bg);}
+  .mname{font-weight:500;display:flex;align-items:center;gap:8px;}
+  .mname .flag-pip{width:7px;height:7px;border-radius:50%;background:var(--alert);flex-shrink:0;box-shadow:0 0 0 3px var(--alert-dim);}
+  .mid{font-family:var(--font-mono);color:var(--text-4);font-size:11.5px;margin-top:1px;}
+  .spark-wrap{width:96px;position:relative;}
+  .spark-wrap svg{display:block;width:96px;height:28px;cursor:pointer;}
+  .today-val{font-family:var(--font-mono);font-size:14.5px;font-weight:600;}
+  .today-val.zero{color:var(--text-4);}
+  .delta{font-family:var(--font-mono);font-size:11.5px;margin-left:8px;display:inline-flex;align-items:center;gap:2px;}
+  .delta.up{color:var(--accent-strong);}
   .delta.down{color:var(--alert);}
-  .delta.flat{color:var(--text-faint);}
+  .delta.flat{color:var(--text-4);}
 
-  .pulse{display:flex;gap:4px;align-items:flex-end;}
-  .pulse .d{width:10px;height:18px;border-radius:2px;background:var(--surface-alt);border:1px solid var(--line);position:relative;}
-  .pulse .d.hasdata{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px rgba(51,214,166,0.25);}
-  .pulse .d.zero{background:rgba(255,92,122,0.15);border:1px solid var(--alert);}
-  .pulse .d.zero.recent{animation:zero-pulse 1.4s ease-in-out infinite;}
-  @keyframes zero-pulse{0%,100%{border-color:var(--alert);background:rgba(255,92,122,0.15);}50%{border-color:#ff9fb2;background:rgba(255,92,122,0.35);}}
-  .pulse .d.nodata{background:transparent;border:1px dashed var(--text-faint);opacity:.4;}
+  .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:6px;white-space:nowrap;}
+  .badge.off{background:var(--alert-dim);color:var(--alert-strong);border:1px solid var(--alert-dim);}
 
-  .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 8px;border-radius:6px;white-space:nowrap;}
-  .badge.off{background:var(--alert-dim);color:var(--alert-text);border:1px solid rgba(255,92,122,0.4);}
+  /* ---- Legend ---- */
+  .legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);margin:0 0 14px;}
+  .legend .lg-item{display:inline-flex;align-items:center;gap:6px;}
+  .legend .lg-swatch{width:14px;height:3px;border-radius:2px;background:var(--accent);display:inline-block;}
+  .legend .lg-swatch.zero{width:8px;height:8px;border-radius:2px;background:var(--alert-dim);border:1px solid var(--alert);}
 
-  .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted);}
-  .empty-state .big{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:6px;}
-  .empty-state code{background:var(--surface-alt);padding:2px 6px;border-radius:5px;font-family:var(--font-mono);font-size:12px;}
+  .empty-state{text-align:center;padding:64px 20px;color:var(--text-3);}
+  .empty-state .big{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px;font-weight:600;}
+  .empty-state code{background:var(--surface-2);border:1px solid var(--line);padding:2px 7px;border-radius:6px;
+    font-family:var(--font-mono);font-size:12px;}
 
-  footer{text-align:center;color:var(--text-faint);font-size:11.5px;margin-top:36px;font-family:var(--font-mono);}
+  footer{text-align:center;color:var(--text-4);font-size:11.5px;margin-top:40px;font-family:var(--font-mono);}
 
   /* ---- Tabs ---- */
-  .tabnav{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
-  .tabbtn{background:none;border:none;color:var(--text-muted);font-family:var(--font-display);font-weight:600;
-    font-size:13px;padding:10px 4px;margin-right:18px;cursor:pointer;position:relative;top:1px;
-    border-bottom:2px solid transparent;}
+  .tabnav{display:flex;gap:2px;margin:0 0 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;
+    top:76px;z-index:80;background:var(--bg);padding-top:2px;}
+  .tabbtn{background:none;border:none;color:var(--text-3);font-family:var(--font-display);font-weight:600;
+    font-size:13.5px;padding:11px 4px;margin-right:22px;cursor:pointer;position:relative;top:1px;
+    border-bottom:2px solid transparent;transition:color .15s;}
   .tabbtn:hover{color:var(--text);}
   .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
-  .tabcount{font-family:var(--font-mono);font-size:10.5px;color:var(--alert);background:var(--alert-dim);
-    border:1px solid rgba(255,92,122,0.35);padding:1px 6px;border-radius:8px;margin-left:4px;}
+  .tabbtn:focus-visible{border-radius:6px;box-shadow:var(--focus-ring);}
+  .tabcount{font-family:var(--font-mono);font-size:10.5px;color:#fff;background:var(--alert);padding:1px 7px;border-radius:10px;
+    margin-left:6px;vertical-align:2px;box-shadow:0 0 0 2px var(--alert-dim);}
   .tabcount:empty{display:none;}
   .tab-panel{display:none;}
   .tab-panel.active{display:block;}
 
-  /* ---- Matrix tables (Merchant x Date / KAM x Date) ---- */
-  .matrix-wrap{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:auto;max-height:72vh;}
+  /* ---- Matrix tables ---- */
+  .matrix-wrap{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);
+    overflow:auto;max-height:72vh;box-shadow:var(--shadow-sm);}
   table.matrix{border-collapse:collapse;font-size:12.5px;white-space:nowrap;}
-  table.matrix thead th{position:sticky;top:0;background:var(--surface-alt);color:var(--text-faint);
-    font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;
+  table.matrix thead th{position:sticky;top:0;background:var(--surface-2);color:var(--text-4);
+    font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;
     border-bottom:1px solid var(--line);text-align:right;z-index:1;}
-  table.matrix thead th:first-child{position:sticky;left:0;top:0;z-index:2;text-align:left;background:var(--surface-alt);}
-  table.matrix tbody td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--font-mono);color:var(--text-muted);}
-  table.matrix tbody td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;font-family:var(--font-body);
-    color:var(--text);font-weight:500;border-right:1px solid var(--line);z-index:1;}
-  table.matrix tbody td.zero{color:var(--text-faint);opacity:.5;}
-  table.matrix tbody td.hi{color:var(--accent);font-weight:600;}
+  table.matrix thead th:first-child{position:sticky;left:0;top:0;z-index:2;text-align:left;background:var(--surface-2);}
+  table.matrix thead th[data-col]{cursor:pointer;user-select:none;}
+  table.matrix thead th[data-col]:hover{color:var(--text);background:var(--surface-3);}
+  table.matrix thead th[aria-sort]::after{content:"";display:inline-block;width:0;height:0;margin-left:5px;vertical-align:2px;
+    border-left:4px solid transparent;border-right:4px solid transparent;}
+  table.matrix thead th[aria-sort="ascending"]::after{border-bottom:5px solid var(--accent);}
+  table.matrix thead th[aria-sort="descending"]::after{border-top:5px solid var(--accent);}
+  table.matrix thead th:first-child[data-col]{text-align:left;}
+  table.matrix tbody td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;
+    font-family:var(--font-mono);color:var(--text-3);cursor:default;}
+  table.matrix tbody td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;
+    font-family:var(--font-body);color:var(--text);font-weight:500;border-right:1px solid var(--line);z-index:1;}
+  table.matrix tbody td.zero{color:var(--text-4);opacity:.55;}
+  table.matrix tbody td.hi{color:var(--accent-strong);font-weight:600;}
   table.matrix tbody td.rowtotal{font-weight:600;color:var(--text);border-left:1px solid var(--line);}
   table.matrix tbody tr:hover td{background:var(--row-hover);}
-  table.matrix tbody tr:hover td:first-child{background:var(--sticky-hover);}
+  table.matrix tbody tr:hover td:first-child{background:var(--surface-2);}
   table.matrix tfoot td{padding:9px 12px;font-family:var(--font-mono);font-weight:600;color:var(--text);
-    border-top:1px solid var(--line);text-align:right;background:var(--surface-alt);position:sticky;bottom:0;}
-  table.matrix tfoot td:first-child{position:sticky;left:0;bottom:0;text-align:left;background:var(--surface-alt);z-index:2;}
+    border-top:1px solid var(--line);text-align:right;background:var(--surface-2);position:sticky;bottom:0;}
+  table.matrix tfoot td:first-child{position:sticky;left:0;bottom:0;text-align:left;background:var(--surface-2);z-index:2;}
 
   .matrix-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
-  .matrix-toolbar .hint{font-size:12px;color:var(--text-faint);}
+  .matrix-toolbar .hint{font-size:12px;color:var(--text-4);}
 
-  /* ---- KAM summary cards/table ---- */
-  .kam-summary-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
-  .kam-summary-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);
-    font-weight:500;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface-alt);}
+  /* ---- KAM summary table ---- */
+  .kam-summary-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+  .kam-summary-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);
+    font-weight:600;padding:11px 18px;border-bottom:1px solid var(--line);background:var(--surface-2);}
   .kam-summary-table thead th.num{text-align:right;}
-  .kam-summary-table tbody td{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;}
+  .kam-summary-table tbody td{padding:13px 18px;border-bottom:1px solid var(--line);font-size:13px;}
   .kam-summary-table tbody td.num{text-align:right;font-family:var(--font-mono);}
   .kam-summary-table tbody tr:last-child td{border-bottom:none;}
   .kam-summary-table tbody tr:hover{background:var(--row-hover);}
   .kam-summary-table .kamname{font-weight:600;font-family:var(--font-display);}
-  .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--alert-dim);color:var(--alert-text);border:1px solid rgba(255,92,122,0.4);}
+  .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
+    color:var(--alert);border:1px solid var(--alert-dim);}
 
+  /* ---- Tooltip ---- */
+  .tip{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;
+    box-shadow:var(--shadow-lg);padding:10px 12px;min-width:160px;max-width:240px;pointer-events:none;
+    opacity:0;transform:translateY(4px);transition:opacity .12s var(--ease), transform .12s var(--ease);font-size:12px;}
+  .tip.show{opacity:1;transform:translateY(0);}
+  .tip .tip-title{font-family:var(--font-display);font-weight:600;font-size:12.5px;margin-bottom:7px;padding-bottom:7px;
+    border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .tip .tip-rows{display:flex;flex-direction:column;gap:4px;}
+  .tip .tip-row{display:flex;align-items:center;justify-content:space-between;gap:14px;font-family:var(--font-mono);font-size:11.5px;}
+  .tip .tip-row .r-date{color:var(--text-3);}
+  .tip .tip-row .r-val{font-weight:600;color:var(--text);}
+  .tip .tip-row .r-val.zero{color:var(--alert);}
+  .tip .tip-row .r-val.nd{color:var(--text-4);}
+
+  @media (max-width:960px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+  }
   @media (max-width:760px){
     .stats{grid-template-columns:repeat(2,1fr);}
     table.merchants thead{display:none;}
     table.merchants, table.merchants tbody, table.merchants tr, table.merchants td{display:block;width:100%;}
-    table.merchants tbody tr{padding:12px 16px;border-bottom:1px solid var(--line);}
+    table.merchants tbody tr{padding:12px 18px;border-bottom:1px solid var(--line);}
     table.merchants tbody td{padding:3px 0;border-bottom:none;}
+    .field input{width:120px;}
   }
   @media (prefers-reduced-motion: reduce){
-    *{animation:none !important;}
+    *{animation:none !important;transition:none !important;}
   }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="wrap">
+  <span id="main"></span>
 
   <header class="top">
     <div class="brand">
@@ -248,10 +363,15 @@
         <p>Day-over-day order tracking · AD Team</p>
       </div>
     </div>
-    <div class="top-controls">
-      <input type="text" id="searchInput" class="pill-input" placeholder="Search merchant or ID…" />
-      <select id="kamFilter" class="pill-input"><option value="">All KAMs</option></select>
-      <button class="refresh" id="refreshBtn"><span class="dot"></span>Refresh</button>
+    <div class="top-controls" aria-label="Dashboard controls">
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search merchant or ID…" aria-label="Search merchants" />
+      </div>
+      <select id="kamFilter" class="pill-input" aria-label="Filter by KAM"><option value="">All KAMs</option></select>
+      <button class="refresh" id="refreshBtn" aria-label="Refresh data">
+        <span class="dot"></span><span>Refresh</span><span class="auto" id="autoLabel"></span>
+      </button>
       <button class="theme-toggle" id="themeToggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -259,12 +379,22 @@
     </div>
   </header>
 
-  <nav class="tabnav" id="tabNav">
-    <button class="tabbtn active" data-tab="dashboard">Dashboard</button>
-    <button class="tabbtn" data-tab="flagged">Off 2+ Days <span class="tabcount" id="flaggedTabCount"></span></button>
-    <button class="tabbtn" data-tab="merchantMatrix">Merchant × Date</button>
-    <button class="tabbtn" data-tab="kamSummary">KAM Summary</button>
-    <button class="tabbtn" data-tab="kamMatrix">KAM × Date</button>
+  <div class="banner error" id="errorBanner" role="alert">
+    <div class="b-msg"><strong>Couldn't load data.</strong> <span id="errorMsg"></span></div>
+    <div class="b-action"><button class="b-btn retry" id="retryBtn">Retry</button></div>
+  </div>
+
+  <div class="banner stale" id="staleBanner">
+    <div class="b-msg" id="staleMsg"></div>
+    <div class="b-action"><button class="b-btn dismiss" id="staleDismiss">Dismiss</button></div>
+  </div>
+
+  <nav class="tabnav" id="tabNav" role="tablist" aria-label="Views">
+    <button class="tabbtn active" role="tab" aria-selected="true" data-tab="dashboard" id="tab-dashboard">Dashboard</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="flagged" id="tab-flagged">Off 2+ Days <span class="tabcount" id="flaggedTabCount" aria-live="polite"></span></button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="merchantMatrix" id="tab-merchantMatrix">Merchant × Date</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamSummary" id="tab-kamSummary">KAM Summary</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamMatrix" id="tab-kamMatrix">KAM × Date</button>
   </nav>
 
   <div class="empty-state" id="emptyState" style="display:none;">
@@ -272,20 +402,25 @@
     <div>Paste your Apps Script Web App URL into <code>CONFIG.WEB_APP_URL</code> near the top of this file, then redeploy.</div>
   </div>
 
-  <!-- ===== Tab: Dashboard (original view) ===== -->
-  <div class="tab-panel active" id="panel-dashboard">
-    <section class="stats">
-      <div class="stat"><div class="num" id="statTotal">–</div><div class="lbl">Merchants tracked</div></div>
-      <div class="stat"><div class="num" id="statToday">–</div><div class="lbl">Orders today</div></div>
-      <div class="stat alertstat"><div class="num" id="statAlerts">–</div><div class="lbl">Off 2+ days</div></div>
-      <div class="stat"><div class="num" id="statSynced">–</div><div class="lbl">Last synced</div></div>
+  <!-- ===== Tab: Dashboard ===== -->
+  <div class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+    <section class="stats" aria-label="Summary statistics">
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="store"></span><span class="lbl">Merchants tracked</span></div><div class="num" id="statTotal">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Orders today</span></div><div class="num" id="statToday">–</div><span class="trend" id="statTodayTrend"></span></div>
+      <div class="stat alertstat"><div class="stat-top"><span class="stat-icon" data-icon="alert"></span><span class="lbl">Off 2+ days</span></div><div class="num" id="statAlerts">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="sync"></span><span class="lbl">Last synced</span></div><div class="num" id="statSynced">–</div></div>
     </section>
+
+    <div class="legend" id="legendRow" style="display:none;">
+      <span class="lg-item"><span class="lg-swatch"></span> Orders</span>
+      <span class="lg-item"><span class="lg-swatch zero"></span> Zero / no orders</span>
+    </div>
 
     <section id="kamSections"></section>
   </div>
 
-  <!-- ===== Tab: Flagged (merchants off orders 2+ days) ===== -->
-  <div class="tab-panel" id="panel-flagged">
+  <!-- ===== Tab: Flagged ===== -->
+  <div class="tab-panel" id="panel-flagged" role="tabpanel" aria-labelledby="tab-flagged">
     <section class="alertbox empty" id="alertBox">
       <h3><span class="alert-ring" style="display:none"></span>No merchants currently flagged</h3>
       <div class="alert-chips" id="alertChips"></div>
@@ -293,15 +428,15 @@
   </div>
 
   <!-- ===== Tab: Merchant x Date matrix ===== -->
-  <div class="tab-panel" id="panel-merchantMatrix">
+  <div class="tab-panel" id="panel-merchantMatrix" role="tabpanel" aria-labelledby="tab-merchantMatrix">
     <div class="matrix-toolbar">
-      <span class="hint">Order count per merchant, per day. Scroll to see the full date range.</span>
+      <span class="hint">Order count per merchant, per day. Click any column header to sort. Scroll to see the full date range.</span>
     </div>
     <div class="matrix-wrap"><table class="matrix" id="merchantMatrixTable"></table></div>
   </div>
 
   <!-- ===== Tab: KAM summary ===== -->
-  <div class="tab-panel" id="panel-kamSummary">
+  <div class="tab-panel" id="panel-kamSummary" role="tabpanel" aria-labelledby="tab-kamSummary">
     <div class="matrix-toolbar">
       <span class="hint">Totals per KAM across the current date window.</span>
     </div>
@@ -309,15 +444,17 @@
   </div>
 
   <!-- ===== Tab: KAM x Date matrix ===== -->
-  <div class="tab-panel" id="panel-kamMatrix">
+  <div class="tab-panel" id="panel-kamMatrix" role="tabpanel" aria-labelledby="tab-kamMatrix">
     <div class="matrix-toolbar">
-      <span class="hint">Combined order count of every merchant under each KAM, per day.</span>
+      <span class="hint">Combined order count of every merchant under each KAM, per day. Click a column header to sort.</span>
     </div>
     <div class="matrix-wrap"><table class="matrix" id="kamMatrixTable"></table></div>
   </div>
 
   <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
 </div>
+
+<div class="tip" id="tipEl" role="tooltip"></div>
 
 <script>
 /* =========================================================
@@ -331,13 +468,50 @@ const CONFIG = {
   ALERT_DAYS: 2                 // consecutive zero-order days that trigger an alert
 };
 
-let STATE = { dates: [], merchants: [], groups: {}, collapsed: {} };
+const LS = {
+  theme: 'merchantPulse:theme',
+  search: 'merchantPulse:search',
+  kam: 'merchantPulse:kam',
+  collapsed: 'merchantPulse:collapsed',
+  tab: 'merchantPulse:tab',
+  mSort: 'merchantPulse:mSort',
+  kSort: 'merchantPulse:kSort'
+};
+
+let STATE = {
+  dates: [], merchants: [], groups: {}, collapsed: {},
+  loading: false, lastSync: null, hasData: false,
+  merchantSort: { col: 'name', dir: 0 },   // dir: 0=native, 1=asc, 2=desc
+  kamSort: { col: 'name', dir: 0 }
+};
+
+/* ---------------- helpers ---------------- */
+function lsGet(k, fb){
+  try { const v = localStorage.getItem(k); return v === null ? fb : v; } catch(e){ return fb; }
+}
+function lsSet(k, v){
+  try { localStorage.setItem(k, v); } catch(e){ /* ignore */ }
+}
+function lsGetJSON(k, fb){
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; }
+}
+function lsSetJSON(k, v){
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){ /* ignore */ }
+}
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a), ms); }; };
 
 function fmtDate(iso){
   if(!iso) return "–";
   const d = new Date(iso + "T00:00:00");
   if (isNaN(d)) return iso;
   return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function fmtDateTime(ts){
+  if(!ts) return "–";
+  return new Date(ts).toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
+}
+function fmtNum(n){
+  return n ? n.toLocaleString() : String(n ?? '');
 }
 
 function isFlagged(orders){
@@ -347,9 +521,16 @@ function isFlagged(orders){
   const tail = orders.slice(n - CONFIG.ALERT_DAYS);
   return tail.every(v => v === 0);
 }
+function flaggedDays(orders){
+  orders = safeOrders(orders);
+  let c = 0;
+  for (let i = orders.length - 1; i >= 0; i--){
+    const v = orders[i];
+    if (v === 0) c++; else break;
+  }
+  return c;
+}
 
-// Some rows in the source sheet can have a missing/short/non-array
-// orders field — never let that throw and blank out an entire tab.
 function safeOrders(orders){
   return Array.isArray(orders) ? orders : [];
 }
@@ -360,41 +541,242 @@ function esc(str){
   }[c]));
 }
 
-// Renders an error message inside a container instead of leaving it
-// blank, so a bad row can never make a whole tab silently disappear.
 function renderTabError(el, err){
   console.error(err);
   el.innerHTML = `<div class="empty-state"><div class="big">Couldn't render this tab</div>
     <div>${esc(err && err.message ? err.message : err)}</div></div>`;
 }
 
+function getFilteredPool(){
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const kamPick = document.getElementById('kamFilter').value;
+  return STATE.merchants.filter(m => {
+    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
+    if (search){
+      const hay = (m.businessName + " " + m.businessId).toLowerCase();
+      if (hay.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------------- icons (inlined) ---------------- */
+const ICONS = {
+  store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11h18V9"/><path d="M3 9h18"/><path d="M9 20v-6h6v6"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+  sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>'
+};
+
+/* ---------------- sparklines ---------------- */
+function sparklineSVG(values, dates){
+  const W = 96, H = 28, PX = 2, PY = 5;
+  const n = values.length;
+  if (!n) return '';
+  const nums = values.map(v => (v === null || v === undefined) ? null : Number(v));
+  const nonNull = nums.filter(v => v !== null);
+  let min = 0, max = 0;
+  if (nonNull.length){ min = Math.min.apply(null, nonNull); max = Math.max.apply(null, nonNull); }
+  if (min === max){ min -= 1; max += 1; }
+  const span = max - min;
+  const px = (i, v) => [ (n === 1 ? 0.5 : i / (n - 1)) * (W - 2*PX) + PX, H - PY - ((v - min) / span) * (H - 2*PY) ];
+
+  let stroke = '', fill = '';
+  let segOpen = false, first = null, last = null;
+  for (let i = 0; i < n; i++){
+    const v = nums[i];
+    if (v === null){ segOpen = false; continue; }
+    const [x, y] = px(i, v);
+    if (!segOpen){
+      stroke += 'M' + x.toFixed(1) + ' ' + y.toFixed(1);
+      first = [x, y];
+      segOpen = true;
+    } else {
+      stroke += ' L' + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    last = [x, y];
+  }
+  if (!stroke) return '';
+  if (first && last && first[0] !== last[0]){
+    fill = stroke + ' L' + last[0].toFixed(1) + ' ' + (H-PY).toFixed(1) +
+           ' L' + first[0].toFixed(1) + ' ' + (H-PY).toFixed(1) + ' Z';
+  }
+  const gradId = 'g' + Math.random().toString(36).slice(2, 8);
+  const lastVal = nums[n - 1];
+  const lastPt = nums[n - 1] === null ? null : px(n - 1, nums[n - 1]);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Trend over ${dates.length} days">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      ${fill ? '<path d="' + fill + '" fill="url(#' + gradId + ')"/>' : ''}
+      <path d="${stroke}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${lastPt ? '<circle cx="' + lastPt[0].toFixed(1) + '" cy="' + lastPt[1].toFixed(1) + '" r="2.6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>' : ''}
+    </svg>`;
+}
+
+/* ---------------- tooltip ---------------- */
+const tipEl = document.getElementById('tipEl');
+function showTip(html, x, y){
+  tipEl.innerHTML = html;
+  tipEl.classList.add('show');
+  positionTip(x, y);
+}
+function positionTip(x, y){
+  const r = tipEl.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  tipEl.style.left = left + 'px';
+  tipEl.style.top = top + 'px';
+}
+function hideTip(){ tipEl.classList.remove('show'); }
+
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('[data-tip]') || e.target.closest('[data-cell]');
+  if (!el) return;
+  let html = '';
+  if (el.hasAttribute('data-tip')) html = el.getAttribute('data-tip');
+  else html = cellTip(el);
+  if (html) showTip(html, e.clientX, e.clientY);
+});
+document.addEventListener('mousemove', e => {
+  if (tipEl.classList.contains('show')) positionTip(e.clientX, e.clientY);
+});
+document.addEventListener('mouseout', e => {
+  if (!e.relatedTarget || !tipEl.contains(e.relatedTarget)) hideTip();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+
+function dayTip(title, dates, values){
+  const rows = dates.map((d, i) => {
+    const v = values[i];
+    const valCls = v === null || v === undefined ? 'nd' : (v === 0 ? 'zero' : '');
+    const val = v === null || v === undefined ? 'no data' : (v + ' order' + (v === 1 ? '' : 's'));
+    return '<div class="tip-row"><span class="r-date">' + esc(fmtDate(d)) + '</span><span class="r-val ' + valCls + '">' + val + '</span></div>';
+  }).join('');
+  return '<div class="tip-title">' + esc(title) + '</div><div class="tip-rows">' + rows + '</div>';
+}
+function cellTip(el){
+  const matrix = el.getAttribute('data-matrix');
+  const c = parseInt(el.getAttribute('data-c'), 10);
+  const tr = el.closest('tr');
+  if (isNaN(c) || !tr) return '';
+  const date = fmtDate(STATE.dates[c]);
+  const vText = el.textContent;
+  if (matrix === 'merchant'){
+    const name = tr.getAttribute('data-name') || 'Merchant';
+    const id = tr.getAttribute('data-id') || '';
+    const nd = vText === '–';
+    const val = nd ? 'no data' : (vText + ' order' + (vText === '1' ? '' : 's'));
+    const cls = nd ? 'nd' : (vText === '0' ? 'zero' : '');
+    return '<div class="tip-title">' + esc(name) + ' <span class="mid">#' + esc(id) + '</span></div>' +
+      '<div class="tip-rows"><div class="tip-row"><span class="r-date">' + esc(date) + '</span><span class="r-val ' + cls + '">' + val + '</span></div></div>';
+  }
+  if (matrix === 'kam'){
+    const name = tr.getAttribute('data-kam') || 'KAM';
+    const cnt = tr.getAttribute('data-cnt') || '';
+    const val = vText + ' orders';
+    const cls = vText === '0' ? 'zero' : '';
+    return '<div class="tip-title">' + esc(name) + ' <span class="mid">(' + cnt + ' merchants)</span></div>' +
+      '<div class="tip-rows"><div class="tip-row"><span class="r-date">' + esc(date) + '</span><span class="r-val ' + cls + '">' + val + '</span></div></div>';
+  }
+  return '';
+}
+
+/* ---------------- loading skeletons ---------------- */
+function renderSkeletons(){
+  const nums = document.querySelectorAll('#panel-dashboard .stat .num');
+  nums.forEach(n => {
+    n.innerHTML = '<div class="skel num"></div>';
+  });
+  document.getElementById('statTodayTrend').innerHTML = '';
+  const sec = document.getElementById('kamSections');
+  let html = '';
+  for (let i = 0; i < 3; i++){
+    html += '<div class="kam-section" style="padding:0">'
+      + '<div class="kam-head" style="cursor:default"><span class="skel line" style="width:140px"></span></div>'
+      + '<table class="merchants"><tbody>';
+    for (let r = 0; r < 4; r++){
+      html += '<tr><td><div class="skel line" style="width:' + (110 + r * 14) + 'px;margin-bottom:6px"></div><div class="skel line" style="width:60px"></div></td>'
+        + '<td><div class="skel line" style="width:96px;height:28px"></div></td>'
+        + '<td><div class="skel line" style="width:44px;height:14px"></div></td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+  sec.innerHTML = html;
+}
+
+/* ---------------- data load ---------------- */
 async function loadData(){
   const btn = document.getElementById('refreshBtn');
+  if (STATE.loading) return;
   btn.classList.add('loading');
+  hideError();
   try {
     if (!CONFIG.WEB_APP_URL || CONFIG.WEB_APP_URL.indexOf("PASTE_YOUR") === 0){
       document.getElementById('emptyState').style.display = 'block';
+      renderSkeletons();
       return;
     }
+    STATE.loading = true;
+    renderSkeletons();
     const res = await fetch(CONFIG.WEB_APP_URL, {cache:"no-store"});
+    if (!res.ok) throw new Error('Server returned ' + res.status);
     const json = await res.json();
     STATE.dates = json.dates || [];
     STATE.merchants = json.merchants || [];
+    STATE.lastSync = Date.now();
+    STATE.hasData = true;
+    STATE.loading = false;
     document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('legendRow').style.display = '';
     const flaggedCount = STATE.merchants.filter(m => isFlagged(m.orders)).length;
     document.getElementById('flaggedTabCount').textContent = flaggedCount ? flaggedCount : '';
     renderActiveTab();
   } catch(err){
     console.error(err);
-    document.getElementById('emptyState').style.display = 'block';
-    document.querySelector('#emptyState .big').textContent = 'Could not load data';
-    document.querySelector('#emptyState div:nth-child(2)').innerHTML =
-      'Check that the Web App is deployed with "Anyone with the link" access, and that the URL in <code>CONFIG.WEB_APP_URL</code> is correct.';
+    STATE.loading = false;
+    document.getElementById('emptyState').style.display = 'none';
+    showError(err);
   } finally {
     btn.classList.remove('loading');
   }
 }
 
+function showError(err){
+  document.getElementById('errorMsg').textContent =
+    'Check that the Web App is deployed with "Anyone with the link" access, and that the URL in CONFIG.WEB_APP_URL is correct.';
+  document.getElementById('errorBanner').classList.add('show');
+}
+function hideError(){ document.getElementById('errorBanner').classList.remove('show'); }
+
+/* ---------------- freshness / countdown ---------------- */
+function updateFreshness(){
+  const auto = document.getElementById('autoLabel');
+  if (!STATE.lastSync){
+    auto.textContent = '';
+    document.getElementById('staleBanner').classList.remove('show');
+    return;
+  }
+  const since = Date.now() - STATE.lastSync;
+  const remain = Math.max(0, CONFIG.REFRESH_MS - since);
+  const mm = Math.floor(remain / 60000);
+  const ss = Math.floor((remain % 60000) / 1000);
+  auto.textContent = 'auto ' + mm + ':' + (ss < 10 ? '0' : '') + ss;
+  if (since > CONFIG.REFRESH_MS * 1.2){
+    document.getElementById('staleMsg').textContent =
+      'Data may be stale — last synced ' + fmtDateTime(STATE.lastSync) + '. Auto-refresh may have been interrupted.';
+    document.getElementById('staleBanner').classList.add('show');
+  } else {
+    document.getElementById('staleBanner').classList.remove('show');
+  }
+}
+
+/* ---------------- grouping / filter ---------------- */
 function buildGroups(list){
   const groups = {};
   list.forEach(m => {
@@ -407,52 +789,63 @@ function buildGroups(list){
 
 function populateKamFilter(groups){
   const sel = document.getElementById('kamFilter');
-  const current = sel.value;
   sel.innerHTML = '<option value="">All KAMs</option>';
   Object.keys(groups).sort().forEach(k => {
     const opt = document.createElement('option');
-    opt.value = k; opt.textContent = `${k} (${groups[k].length})`;
+    opt.value = k; opt.textContent = k + ' (' + groups[k].length + ')';
     sel.appendChild(opt);
   });
-  sel.value = current;
 }
 
+/* ---------------- dashboard render ---------------- */
 function render(){
   try { renderDashboardInner(); }
   catch(err){ renderTabError(document.getElementById('kamSections'), err); }
 }
 
 function renderDashboardInner(){
-  const search = document.getElementById('searchInput').value.trim().toLowerCase();
-  const kamPick = document.getElementById('kamFilter').value;
+  if (!STATE.hasData && STATE.loading){ renderSkeletons(); return; }
+  if (!STATE.hasData){ document.getElementById('kamSections').innerHTML = ''; return; }
 
-  let filtered = STATE.merchants.filter(m => {
-    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
-    if (search){
-      const hay = (m.businessName + " " + m.businessId).toLowerCase();
-      if (hay.indexOf(search) === -1) return false;
-    }
-    return true;
-  });
-
+  const filtered = getFilteredPool();
   const groups = buildGroups(filtered);
   STATE.groups = groups;
   populateKamFilter(buildGroups(STATE.merchants));
 
-  // ---- stats ----
-  const todayIdx = STATE.dates.length - 1;
+  const dates = STATE.dates;
+  const todayIdx = dates.length - 1;
+  const yestIdx = todayIdx - 1;
   const todayTotal = STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[todayIdx]) || 0), 0);
+  const yestTotal = yestIdx >= 0 ? STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[yestIdx]) || 0), 0) : null;
   const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
-  document.getElementById('statTotal').textContent = STATE.merchants.length;
-  document.getElementById('statToday').textContent = todayTotal;
-  document.getElementById('statAlerts').textContent = flagged.length;
-  document.getElementById('statSynced').textContent = STATE.dates.length ? fmtDate(STATE.dates[todayIdx]) : "–";
-  document.getElementById('footNote').textContent =
-    `Merchant Pulse · ${STATE.dates.length} day window · updated ${new Date().toLocaleTimeString()}`;
 
-  // ---- kam sections ----
+  document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
+  document.getElementById('statToday').textContent = fmtNum(todayTotal);
+  document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
+  document.getElementById('statSynced').textContent = fmtDate(dates[todayIdx]) || "–";
+
+  // today trend vs yesterday
+  const trend = document.getElementById('statTodayTrend');
+  if (yestTotal === null){
+    trend.className = 'trend flat'; trend.textContent = 'first day';
+  } else {
+    const diff = todayTotal - yestTotal;
+    const pct = yestTotal ? Math.round((diff / yestTotal) * 100) : null;
+    const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+    const sign = diff > 0 ? '▲ ' : diff < 0 ? '▼ ' : '';
+    const pctTxt = pct !== null ? ' (' + (pct > 0 ? '+' : '') + pct + '%)' : '';
+    trend.className = 'trend ' + cls;
+    trend.textContent = sign + (diff > 0 ? '+' : '') + fmtNum(diff) + ' vs yest' + pctTxt;
+  }
+
+  document.getElementById('footNote').textContent =
+    'Merchant Pulse · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
+
   const container = document.getElementById('kamSections');
   container.innerHTML = "";
+  const last7start = Math.max(0, dates.length - 7);
+  const dateWindow = dates.slice(last7start);
+
   Object.keys(groups).sort().forEach(kam => {
     const rows = groups[kam].sort((a,b)=>a.businessName.localeCompare(b.businessName));
     const flaggedCount = rows.filter(m => isFlagged(m.orders)).length;
@@ -463,25 +856,28 @@ function renderDashboardInner(){
 
     const head = document.createElement('div');
     head.className = 'kam-head';
+    head.setAttribute('role', 'button');
+    head.setAttribute('tabindex', '0');
+    head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     head.innerHTML = `
       <div class="left">
         <span class="caret">▾</span>
-        <span class="name">${kam}</span>
+        <span class="name">${esc(kam)}</span>
         <span class="count">${rows.length} merchant${rows.length>1?'s':''}</span>
       </div>
       ${flaggedCount ? `<span class="kam-alert">${flaggedCount} off</span>` : ''}
     `;
-    head.addEventListener('click', () => {
+    const toggle = () => {
       STATE.collapsed[kam] = !STATE.collapsed[kam];
+      lsSetJSON(LS.collapsed, STATE.collapsed);
       render();
-    });
+    };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
     section.appendChild(head);
 
     const table = document.createElement('table');
     table.className = 'merchants';
-    const last7start = Math.max(0, STATE.dates.length - 7);
-    const dateWindow = STATE.dates.slice(last7start);
-
     table.innerHTML = `
       <thead><tr>
         <th>Merchant</th>
@@ -499,6 +895,7 @@ function renderDashboardInner(){
       const orderWindow = orders.slice(last7start);
       const todayVal = orders[orders.length-1];
       const yestVal = orders.length > 1 ? orders[orders.length-2] : null;
+
       let deltaHtml = '';
       if (yestVal !== null && yestVal !== undefined){
         const diff = (todayVal||0) - (yestVal||0);
@@ -507,25 +904,18 @@ function renderDashboardInner(){
         deltaHtml = `<span class="delta ${cls}">${sign}${diff}</span>`;
       }
 
-      const dots = dateWindow.map((d,i) => {
-        const v = orderWindow[i];
-        const isLastTwo = i >= dateWindow.length - CONFIG.ALERT_DAYS;
-        let cls = 'd';
-        if (v === null || v === undefined) cls += ' nodata';
-        else if (v === 0) cls += ' zero' + (isLastTwo && flag ? ' recent' : '');
-        else cls += ' hasdata';
-        const label = `${d}: ${v===null||v===undefined?'no data':v+' orders'}`;
-        return `<div class="${cls}" title="${label}"></div>`;
-      }).join('');
+      const spark = sparklineSVG(orderWindow, dateWindow);
+      const tip = dayTip(m.businessName + ' · #' + m.businessId, dateWindow, orderWindow)
+        .replace(/"/g, '&quot;');
 
       const tr = document.createElement('tr');
       if (flag) tr.className = 'flagged';
       tr.innerHTML = `
         <td>
-          <div class="mname">${esc(m.businessName)}</div>
+          <div class="mname">${flag ? '<span class="flag-pip"></span>' : ''}${esc(m.businessName)}</div>
           <div class="mid">#${esc(m.businessId)}</div>
         </td>
-        <td><div class="pulse">${dots}</div></td>
+        <td><div class="spark-wrap" data-tip="${tip}">${spark}</div></td>
         <td><span class="today-val ${(!todayVal)?'zero':''}">${todayVal ?? '–'}</span>${deltaHtml}</td>
         <td>${flag ? `<span class="badge off">OFF ${CONFIG.ALERT_DAYS}D</span>` : ''}</td>
       `;
@@ -537,22 +927,47 @@ function renderDashboardInner(){
   });
 }
 
-/* =========================================================
-   Tab switching
-   ========================================================= */
-document.getElementById('tabNav').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tabbtn');
-  if (!btn) return;
-  const tab = btn.dataset.tab;
-  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b === btn));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
-  renderActiveTab(tab);
-});
+/* ---------------- tab switching ---------------- */
+const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix'];
 
 function activeTab(){
-  const btn = document.querySelector('.tabbtn.active');
-  return btn ? btn.dataset.tab : 'dashboard';
+  return (document.querySelector('.tabbtn.active') || {}).dataset?.tab || 'dashboard';
 }
+function setTab(tab, opts){
+  opts = opts || {};
+  if (TABS.indexOf(tab) === -1) tab = 'dashboard';
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  document.querySelectorAll('.tabbtn').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
+    if (b.dataset.tab === tab && opts.focus) b.focus();
+  });
+  if (!opts.noHash) history.replaceState(null, '', '#' + tab);
+  lsSet(LS.tab, tab);
+  renderActiveTab(tab);
+}
+
+document.getElementById('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tabbtn');
+  if (!btn) return;
+  setTab(btn.dataset.tab);
+});
+document.getElementById('tabNav').addEventListener('keydown', e => {
+  const keys = ['ArrowRight','ArrowLeft','Home','End'];
+  if (keys.indexOf(e.key) === -1) return;
+  e.preventDefault();
+  const btns = Array.from(document.querySelectorAll('.tabbtn'));
+  let idx = btns.findIndex(b => b.classList.contains('active'));
+  if (e.key === 'ArrowRight') idx = (idx + 1) % btns.length;
+  else if (e.key === 'ArrowLeft') idx = (idx - 1 + btns.length) % btns.length;
+  else if (e.key === 'Home') idx = 0;
+  else if (e.key === 'End') idx = btns.length - 1;
+  setTab(btns[idx].dataset.tab, { focus: true });
+});
+window.addEventListener('hashchange', () => {
+  const tab = location.hash.replace('#','');
+  if (TABS.indexOf(tab) !== -1) setTab(tab, { noHash: true });
+});
 
 function renderActiveTab(tab){
   tab = tab || activeTab();
@@ -563,25 +978,18 @@ function renderActiveTab(tab){
   else if (tab === 'kamMatrix') renderKamMatrix();
 }
 
-/* =========================================================
-   Tab: Merchant x Date matrix
-   ========================================================= */
-/* =========================================================
-   Tab: Flagged (merchants off orders CONFIG.ALERT_DAYS+ days)
-   ========================================================= */
+/* ---------------- flagged tab ---------------- */
 function renderFlagged(){
   const alertBox = document.getElementById('alertBox');
   try { renderFlaggedInner(alertBox); }
   catch(err){ renderTabError(alertBox.parentElement, err); }
 }
-
 function renderFlaggedInner(alertBox){
   const kamPick = document.getElementById('kamFilter').value;
   const pool = kamPick
     ? STATE.merchants.filter(m => (m.assignedKam || "(Unassigned)") === kamPick)
     : STATE.merchants;
   const flagged = pool.filter(m => isFlagged(m.orders));
-
   const chipWrap = document.getElementById('alertChips');
   chipWrap.innerHTML = "";
   if (flagged.length){
@@ -591,59 +999,81 @@ function renderFlaggedInner(alertBox){
     flagged
       .sort((a,b)=>a.businessName.localeCompare(b.businessName))
       .forEach(m => {
+        const days = flaggedDays(m.orders);
         const c = document.createElement('div');
         c.className = 'chip';
-        c.innerHTML = `<b>${esc(m.businessName)}</b> <span>· ${esc(m.assignedKam || 'Unassigned')}</span>`;
+        c.innerHTML = `<span class="chip-dot"></span><b>${esc(m.businessName)}</b> <span>· ${esc(m.assignedKam || 'Unassigned')}</span><span class="chip-meta">${days}d off</span>`;
         chipWrap.appendChild(c);
       });
   } else {
     alertBox.classList.add('empty');
-    alertBox.querySelector('h3').innerHTML = `No merchants currently flagged`;
+    alertBox.querySelector('h3').innerHTML = `<span class="alert-ring" style="display:none"></span>No merchants currently flagged`;
   }
 }
 
+/* ---------------- matrix sorting ---------------- */
+function sortRows(rows, s, dates){
+  const arr = rows.slice();
+  if (s.dir === 0) return arr;
+  const asc = s.dir === 1 ? 1 : -1;
+  arr.sort((a,b) => {
+    let av, bv;
+    if (s.col === 'name'){ av = a.name; bv = b.name; return a.name.localeCompare(b.name) * asc; }
+    else if (s.col === 'total'){ av = a.total; bv = b.total; }
+    else { av = a.values[parseInt(s.col,10)] || 0; bv = b.values[parseInt(s.col,10)] || 0; }
+    if (av === bv) return 0;
+    return (av > bv ? 1 : -1) * asc;
+  });
+  return arr;
+}
+function toggleSort(s, col){
+  if (s.col !== col){ s.col = col; s.dir = 1; }
+  else s.dir = (s.dir + 1) % 3;   // asc -> desc -> native
+}
+function sortArrow(dir){
+  return dir === 1 ? 'ascending' : dir === 2 ? 'descending' : 'none';
+}
+
+/* ---------------- merchant matrix ---------------- */
 function renderMerchantMatrix(){
   const table = document.getElementById('merchantMatrixTable');
   try { renderMerchantMatrixInner(table); }
   catch(err){ renderTabError(table.parentElement, err); }
 }
-
 function renderMerchantMatrixInner(table){
   if (!STATE.merchants.length){ table.innerHTML = ''; return; }
-
-  const search = document.getElementById('searchInput').value.trim().toLowerCase();
-  const kamPick = document.getElementById('kamFilter').value;
-  let rows = STATE.merchants.filter(m => {
-    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
-    if (search){
-      const hay = (m.businessName + " " + m.businessId).toLowerCase();
-      if (hay.indexOf(search) === -1) return false;
-    }
-    return true;
-  }).sort((a,b)=>a.businessName.localeCompare(b.businessName));
-
   const dates = STATE.dates;
+  const s = STATE.merchantSort;
+
+  const rows = getFilteredPool().map(m => {
+    const values = safeOrders(m.orders);
+    return { m, name: m.businessName, values,
+      total: values.reduce((a,v) => a + (Number(v) || 0), 0) };
+  });
+  const sorted = sortRows(rows, s, dates);
+
   const thead = `<thead><tr>
-      <th>Merchant</th>
-      ${dates.map(d => `<th>${fmtDate(d)}</th>`).join('')}
-      <th>Total</th>
+      <th data-col="name" aria-sort="${sortArrow(s.col==='name'?s.dir:0)}">Merchant</th>
+      ${dates.map((d,i) => `<th data-col="${i}" aria-sort="${sortArrow(s.col===String(i)?s.dir:0)}">${esc(fmtDate(d))}</th>`).join('')}
+      <th data-col="total" aria-sort="${sortArrow(s.col==='total'?s.dir:0)}">Total</th>
     </tr></thead>`;
 
   const colTotals = dates.map(() => 0);
   let grandTotal = 0;
 
-  const bodyRows = rows.map(m => {
+  const bodyRows = sorted.map((row, r) => {
+    const { m, values } = row;
     let rowTotal = 0;
     const cells = dates.map((d,i) => {
-      const orders = safeOrders(m.orders);
-      const v = Number(orders[i]) || 0;
-      rowTotal += v;
-      colTotals[i] += v;
-      const cls = v === 0 ? 'zero' : (v >= 10 ? 'hi' : '');
-      return `<td class="${cls}">${orders[i] === null || orders[i] === undefined ? '–' : v}</td>`;
+      const v = Number(values[i]) || 0;
+      rowTotal += v; colTotals[i] += v;
+      const nd = values[i] === null || values[i] === undefined;
+      const cls = nd ? 'zero' : (v === 0 ? 'zero' : (v >= 10 ? 'hi' : ''));
+      const shown = nd ? '–' : v;
+      return `<td class="${cls}" data-cell data-matrix="merchant" data-r="${r}" data-c="${i}">${shown}</td>`;
     }).join('');
     grandTotal += rowTotal;
-    return `<tr><td>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+    return `<tr data-name="${esc(m.businessName)}" data-id="${esc(m.businessId)}"><td>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
   }).join('');
 
   const tfoot = `<tfoot><tr>
@@ -653,20 +1083,80 @@ function renderMerchantMatrixInner(table){
     </tr></tfoot>`;
 
   table.innerHTML = thead + `<tbody>${bodyRows || '<tr><td colspan="1">No merchants match the current filter.</td></tr>'}</tbody>` + tfoot;
+  bindMatrixSort(table, 'merchantSort');
 }
 
-/* =========================================================
-   Tab: KAM summary (KAM #1 / KAM #2 style rollup)
-   ========================================================= */
+/* ---------------- kam matrix ---------------- */
+function renderKamMatrix(){
+  const table = document.getElementById('kamMatrixTable');
+  try { renderKamMatrixInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+function renderKamMatrixInner(table){
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+  const dates = STATE.dates;
+  const s = STATE.kamSort;
+  const groups = buildGroups(STATE.merchants);
+  const kams = Object.keys(groups).sort();
+
+  const rows = kams.map(kam => {
+    const list = groups[kam];
+    const values = dates.map(i => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
+    return { name: kam, values, list,
+      total: values.reduce((a,v) => a + v, 0) };
+  });
+  const sorted = sortRows(rows, s, dates);
+
+  const thead = `<thead><tr>
+      <th data-col="name" aria-sort="${sortArrow(s.col==='name'?s.dir:0)}">KAM</th>
+      ${dates.map((d,i) => `<th data-col="${i}" aria-sort="${sortArrow(s.col===String(i)?s.dir:0)}">${esc(fmtDate(d))}</th>`).join('')}
+      <th data-col="total" aria-sort="${sortArrow(s.col==='total'?s.dir:0)}">Total</th>
+    </tr></thead>`;
+
+  const colTotals = dates.map(() => 0);
+  let grandTotal = 0;
+
+  const bodyRows = sorted.map((row, r) => {
+    let rowTotal = 0;
+    const cells = dates.map((d,i) => {
+      const v = row.values[i];
+      rowTotal += v; colTotals[i] += v;
+      const cls = v === 0 ? 'zero' : (v >= 20 ? 'hi' : '');
+      return `<td class="${cls}" data-cell data-matrix="kam" data-r="${r}" data-c="${i}">${v}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    return `<tr data-kam="${esc(row.name)}" data-cnt="${row.list.length}"><td>${esc(row.name)} <span class="mid">(${row.list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+  }).join('');
+
+  const tfoot = `<tfoot><tr>
+      <td>Total</td>
+      ${colTotals.map(t => `<td>${t}</td>`).join('')}
+      <td>${grandTotal}</td>
+    </tr></tfoot>`;
+
+  table.innerHTML = thead + `<tbody>${bodyRows}</tbody>` + tfoot;
+  bindMatrixSort(table, 'kamSort');
+}
+
+function bindMatrixSort(table, stateKey){
+  table.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      toggleSort(STATE[stateKey], th.getAttribute('data-col'));
+      if (stateKey === 'merchantSort') lsSetJSON(LS.mSort, STATE.merchantSort);
+      else lsSetJSON(LS.kSort, STATE.kamSort);
+      renderActiveTab();
+    });
+  });
+}
+
+/* ---------------- kam summary ---------------- */
 function renderKamSummary(){
   const table = document.getElementById('kamSummaryTable');
   try { renderKamSummaryInner(table); }
   catch(err){ renderTabError(table.parentElement, err); }
 }
-
 function renderKamSummaryInner(table){
   if (!STATE.merchants.length){ table.innerHTML = ''; return; }
-
   const groups = buildGroups(STATE.merchants);
   const todayIdx = STATE.dates.length - 1;
 
@@ -679,12 +1169,14 @@ function renderKamSummaryInner(table){
       <th class="num">Flagged</th>
     </tr></thead>`;
 
+  let gToday = 0, gTotal = 0, gMerc = 0, gFlag = 0;
   const rows = Object.keys(groups).sort().map(kam => {
     const list = groups[kam];
     const today = list.reduce((s,m)=> s + (Number(safeOrders(m.orders)[todayIdx]) || 0), 0);
     const total = list.reduce((s,m)=> s + safeOrders(m.orders).reduce((a,v)=> a + (Number(v)||0), 0), 0);
     const flagged = list.filter(m => isFlagged(m.orders)).length;
     const avg = list.length ? (total / list.length).toFixed(1) : '0.0';
+    gToday += today; gTotal += total; gMerc += list.length; gFlag += flagged;
     return `<tr>
         <td class="kamname">${esc(kam)}</td>
         <td class="num">${list.length}</td>
@@ -695,71 +1187,67 @@ function renderKamSummaryInner(table){
       </tr>`;
   }).join('');
 
-  table.innerHTML = thead + `<tbody>${rows}</tbody>`;
-}
-
-/* =========================================================
-   Tab: KAM x Date matrix (each KAM's combined orders per day)
-   ========================================================= */
-function renderKamMatrix(){
-  const table = document.getElementById('kamMatrixTable');
-  try { renderKamMatrixInner(table); }
-  catch(err){ renderTabError(table.parentElement, err); }
-}
-
-function renderKamMatrixInner(table){
-  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
-
-  const groups = buildGroups(STATE.merchants);
-  const dates = STATE.dates;
-  const kams = Object.keys(groups).sort();
-
-  const thead = `<thead><tr>
-      <th>KAM</th>
-      ${dates.map(d => `<th>${fmtDate(d)}</th>`).join('')}
-      <th>Total</th>
-    </tr></thead>`;
-
-  const colTotals = dates.map(() => 0);
-  let grandTotal = 0;
-
-  const bodyRows = kams.map(kam => {
-    const list = groups[kam];
-    let rowTotal = 0;
-    const cells = dates.map((d,i) => {
-      const v = list.reduce((s,m)=> s + (Number(safeOrders(m.orders)[i]) || 0), 0);
-      rowTotal += v;
-      colTotals[i] += v;
-      const cls = v === 0 ? 'zero' : (v >= 20 ? 'hi' : '');
-      return `<td class="${cls}">${v}</td>`;
-    }).join('');
-    grandTotal += rowTotal;
-    return `<tr><td>${esc(kam)} <span class="mid">(${list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
-  }).join('');
-
   const tfoot = `<tfoot><tr>
-      <td>Total</td>
-      ${colTotals.map(t => `<td>${t}</td>`).join('')}
-      <td>${grandTotal}</td>
+      <td>All KAMs</td>
+      <td class="num">${gMerc}</td>
+      <td class="num">${gToday}</td>
+      <td class="num">${gTotal}</td>
+      <td class="num">${gMerc ? (gTotal/gMerc).toFixed(1) : '0.0'}</td>
+      <td class="num">${gFlag ? `<span class="miniflag">${gFlag} off</span>` : '–'}</td>
     </tr></tfoot>`;
 
-  table.innerHTML = thead + `<tbody>${bodyRows}</tbody>` + tfoot;
+  table.innerHTML = thead + `<tbody>${rows}</tbody>` + tfoot;
+  // style foot as totals
+  table.querySelector('tfoot td').style.fontWeight = '600';
+  table.querySelector('tfoot td').style.fontFamily = "var(--font-display)";
 }
 
-document.getElementById('searchInput').addEventListener('input', () => renderActiveTab());
-document.getElementById('kamFilter').addEventListener('change', () => renderActiveTab());
+/* ---------------- events ---------------- */
+document.getElementById('searchInput').addEventListener('input', debounce(() => {
+  lsSet(LS.search, document.getElementById('searchInput').value);
+  renderActiveTab();
+}, 180));
+document.getElementById('kamFilter').addEventListener('change', () => {
+  lsSet(LS.kam, document.getElementById('kamFilter').value);
+  renderActiveTab();
+});
 document.getElementById('refreshBtn').addEventListener('click', loadData);
+document.getElementById('retryBtn').addEventListener('click', loadData);
+document.getElementById('staleDismiss').addEventListener('click', () => {
+  document.getElementById('staleBanner').classList.remove('show');
+});
 
 document.getElementById('themeToggle').addEventListener('click', () => {
   const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  try { localStorage.setItem('merchantPulseTheme', next); }
-  catch (e) { /* storage unavailable — theme just won't persist across reloads */ }
+  lsSet(LS.theme, next);
+});
+
+/* ---------------- boot ---------------- */
+(function restoreState(){
+  // search + kam filter
+  document.getElementById('searchInput').value = lsGet(LS.search, '');
+  document.getElementById('kamFilter').value = lsGet(LS.kam, '');
+  STATE.collapsed = lsGetJSON(LS.collapsed, {});
+  STATE.merchantSort = lsGetJSON(LS.mSort, { col:'name', dir:0 });
+  STATE.kamSort = lsGetJSON(LS.kSort, { col:'name', dir:0 });
+
+  // active tab from hash (deep link) then persisted
+  let tab = location.hash.replace('#','');
+  if (TABS.indexOf(tab) === -1) tab = lsGet(LS.tab, 'dashboard');
+  setTab(tab, { noHash: true });
+})();
+
+// icon injection
+document.querySelectorAll('.stat-icon').forEach(el => {
+  el.innerHTML = ICONS[el.getAttribute('data-icon')] || '';
 });
 
 loadData();
 setInterval(loadData, CONFIG.REFRESH_MS);
+setInterval(updateFreshness, 1000);
+updateFreshness();
 </script>
 </body>
 </html>
