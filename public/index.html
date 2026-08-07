@@ -317,10 +317,10 @@
   .kam-summary-table tbody tr:last-child td{border-bottom:none;}
   .kam-summary-table tbody tr:hover{background:var(--row-hover);}
   .kam-summary-table .kamname{font-weight:600;font-family:var(--font-display);}
-  .kam-summary-table tfoot td{padding:13px 18px;border-top:1px solid var(--line);font-size:13px;font-weight:600;                     
-    color:var(--text);background:var(--surface-2);}                                                                                  
-  .kam-summary-table tfoot td.num{text-align:right;font-family:var(--font-mono);}                                                    
-  .kam-summary-table tfoot .kamname{font-family:var(--font-display);}                      
+  .kam-summary-table tfoot td{padding:13px 18px;border-top:1px solid var(--line);font-size:13px;font-weight:600;
+    color:var(--text);background:var(--surface-2);}
+  .kam-summary-table tfoot td.num{text-align:right;font-family:var(--font-mono);}
+  .kam-summary-table tfoot .kamname{font-family:var(--font-display);}
   .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
     color:var(--alert);border:1px solid var(--alert-dim);}
 
@@ -539,6 +539,15 @@ function safeOrders(orders){
   return Array.isArray(orders) ? orders : [];
 }
 
+// Align a merchant's order array to the full date window so index i always
+// matches dates[i]. Truncates anything longer and pads short arrays with null
+// ("no data"), which the rest of the UI already treats as missing, not zero.
+function normalizeOrders(orders, len){
+  const arr = safeOrders(orders).slice(0, len);
+  while (arr.length < len) arr.push(null);
+  return arr;
+}
+
 function esc(str){
   return String(str ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -732,7 +741,10 @@ async function loadData(){
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const json = await res.json();
     STATE.dates = json.dates || [];
-    STATE.merchants = json.merchants || [];
+    STATE.merchants = (json.merchants || []).map(m => ({
+      ...m,
+      orders: normalizeOrders(m.orders, STATE.dates.length)
+    }));
     STATE.lastSync = Date.now();
     STATE.hasData = true;
     STATE.loading = false;
@@ -753,7 +765,7 @@ async function loadData(){
 
 function showError(err){
   document.getElementById('errorMsg').textContent =
-    'Check that the Web App is deployed with "Anyone with the link" access, and that the URL in CONFIG.WEB_APP_URL is correct.';
+    'Check that the server is running and that /api/data is reachable. That endpoint proxies the Apps Script Web App, which must be deployed with "Anyone with the link" access.';
   document.getElementById('errorBanner').classList.add('show');
 }
 function hideError(){ document.getElementById('errorBanner').classList.remove('show'); }
@@ -793,12 +805,14 @@ function buildGroups(list){
 
 function populateKamFilter(groups){
   const sel = document.getElementById('kamFilter');
+  const cur = sel.value;                       // remember the selection before rebuilding
   sel.innerHTML = '<option value="">All KAMs</option>';
   Object.keys(groups).sort().forEach(k => {
     const opt = document.createElement('option');
     opt.value = k; opt.textContent = k + ' (' + groups[k].length + ')';
     sel.appendChild(opt);
   });
+  sel.value = cur;                             // re-apply it (no-op when '' or the KAM vanished)
 }
 
 /* ---------------- dashboard render ---------------- */
@@ -826,7 +840,7 @@ function renderDashboardInner(){
   document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
   document.getElementById('statToday').textContent = fmtNum(todayTotal);
   document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
-  document.getElementById('statSynced').textContent = fmtDate(dates[todayIdx]) || "–";
+  document.getElementById('statSynced').textContent = fmtDateTime(STATE.lastSync) || "–";
 
   // today trend vs yesterday
   const trend = document.getElementById('statTodayTrend');
@@ -921,7 +935,7 @@ function renderDashboardInner(){
         </td>
         <td><div class="spark-wrap" data-tip="${tip}">${spark}</div></td>
         <td><span class="today-val ${(!todayVal)?'zero':''}">${todayVal ?? '–'}</span>${deltaHtml}</td>
-        <td>${flag ? `<span class="badge off">OFF ${CONFIG.ALERT_DAYS}D</span>` : ''}</td>
+        <td>${flag ? `<span class="badge off">OFF ${flaggedDays(orders)}D</span>` : ''}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1086,7 +1100,7 @@ function renderMerchantMatrixInner(table){
       <td>${grandTotal}</td>
     </tr></tfoot>`;
 
-  table.innerHTML = thead + `<tbody>${bodyRows || '<tr><td colspan="1">No merchants match the current filter.</td></tr>'}</tbody>` + tfoot;
+  table.innerHTML = thead + `<tbody>${bodyRows || '<tr><td colspan="' + (dates.length + 2) + '">No merchants match the current filter.</td></tr>'}</tbody>` + tfoot;
   bindMatrixSort(table, 'merchantSort');
 }
 
@@ -1105,7 +1119,7 @@ function renderKamMatrixInner(table){
 
   const rows = kams.map(kam => {
     const list = groups[kam];
-   const values = dates.map((d,i) => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
+    const values = dates.map((d,i) => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
     return { name: kam, values, list,
       total: values.reduce((a,v) => a + v, 0) };
   });
@@ -1201,7 +1215,7 @@ function renderKamSummaryInner(table){
     </tr></tfoot>`;
 
   table.innerHTML = thead + `<tbody>${rows}</tbody>` + tfoot;
-  }
+}
 
 /* ---------------- events ---------------- */
 document.getElementById('searchInput').addEventListener('input', debounce(() => {
