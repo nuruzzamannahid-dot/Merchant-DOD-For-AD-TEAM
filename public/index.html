@@ -317,6 +317,10 @@
   .kam-summary-table tbody tr:last-child td{border-bottom:none;}
   .kam-summary-table tbody tr:hover{background:var(--row-hover);}
   .kam-summary-table .kamname{font-weight:600;font-family:var(--font-display);}
+  .kam-summary-table tfoot td{padding:13px 18px;border-top:1px solid var(--line);font-size:13px;font-weight:600;                     
+    color:var(--text);background:var(--surface-2);}                                                                                  
+  .kam-summary-table tfoot td.num{text-align:right;font-family:var(--font-mono);}                                                    
+  .kam-summary-table tfoot .kamname{font-family:var(--font-display);}                      
   .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
     color:var(--alert);border:1px solid var(--alert-dim);}
 
@@ -1188,7 +1192,7 @@ function renderKamSummaryInner(table){
   }).join('');
 
   const tfoot = `<tfoot><tr>
-      <td>All KAMs</td>
+      <td class="kamname">All KAMs</td>
       <td class="num">${gMerc}</td>
       <td class="num">${gToday}</td>
       <td class="num">${gTotal}</td>
@@ -1197,10 +1201,7 @@ function renderKamSummaryInner(table){
     </tr></tfoot>`;
 
   table.innerHTML = thead + `<tbody>${rows}</tbody>` + tfoot;
-  // style foot as totals
-  table.querySelector('tfoot td').style.fontWeight = '600';
-  table.querySelector('tfoot td').style.fontFamily = "var(--font-display)";
-}
+  }
 
 /* ---------------- events ---------------- */
 document.getElementById('searchInput').addEventListener('input', debounce(() => {
