@@ -1101,7 +1101,7 @@ function renderKamMatrixInner(table){
 
   const rows = kams.map(kam => {
     const list = groups[kam];
-    const values = dates.map(i => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
+   const values = dates.map((d,i) => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
     return { name: kam, values, list,
       total: values.reduce((a,v) => a + v, 0) };
   });
