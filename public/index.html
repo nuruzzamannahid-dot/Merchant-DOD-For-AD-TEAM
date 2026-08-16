@@ -321,6 +321,34 @@
     color:var(--text);background:var(--surface-2);}
   .kam-summary-table tfoot td.num{text-align:right;font-family:var(--font-mono);}
   .kam-summary-table tfoot .kamname{font-family:var(--font-display);}
+
+  /* ---- Top 10 merchants (per KAM) ---- */
+  .top10-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:18px;align-items:start;}
+  .top10-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:16px 18px 6px;box-shadow:var(--shadow-sm);overflow-x:auto;}
+  .t10-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .t10-head .left{display:flex;align-items:center;gap:10px;}
+  .t10-head .name{font-family:var(--font-display);font-weight:700;font-size:14.5px;}
+  .t10-head .count{font-size:11px;color:var(--text-4);background:var(--surface-2);padding:3px 9px;border-radius:10px;}
+  .t10-stat{font-size:12px;color:var(--text-3);white-space:nowrap;}
+  .t10-stat .mid{color:var(--text-4);}
+  table.top10-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.top10-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text-4);padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.top10-table thead th.num{text-align:right;}
+  table.top10-table tbody td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.top10-table tbody td.num{text-align:right;font-family:var(--font-mono);}
+  table.top10-table tbody tr:last-child td{border-bottom:none;}
+  table.top10-table tbody tr:hover td{background:var(--row-hover);}
+  table.top10-table tbody tr.flagged td{background:var(--alert-bg);}
+  .t10-rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+    background:var(--surface-3);color:var(--text-3);font-family:var(--font-mono);font-weight:600;font-size:11px;flex-shrink:0;}
+  .t10-rank.gold{background:#F7D774;color:#5C4300;}
+  .t10-rank.silver{background:#D9DEE6;color:#3A4250;}
+  .t10-rank.bronze{background:#E6BFA3;color:#5C3315;}
+  [data-theme="dark"] .t10-rank.gold{background:#8A6D1F;color:#FFE8A8;}
+  [data-theme="dark"] .t10-rank.silver{background:#4A5060;color:#E5E9F0;}
+  [data-theme="dark"] .t10-rank.bronze{background:#6B4326;color:#F3D2B8;}
   .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
     color:var(--alert);border:1px solid var(--alert-dim);}
 
@@ -399,6 +427,7 @@
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="merchantMatrix" id="tab-merchantMatrix">Merchant × Date</button>
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamSummary" id="tab-kamSummary">KAM Summary</button>
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamMatrix" id="tab-kamMatrix">KAM × Date</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="top10" id="tab-top10">Top 10 Merchants</button>
   </nav>
 
   <div class="empty-state" id="emptyState" style="display:none;">
@@ -453,6 +482,14 @@
       <span class="hint">Combined order count of every merchant under each KAM, per day. Click a column header to sort.</span>
     </div>
     <div class="matrix-wrap"><table class="matrix" id="kamMatrixTable"></table></div>
+  </div>
+
+  <!-- ===== Tab: Top 10 Merchants ===== -->
+  <div class="tab-panel" id="panel-top10" role="tabpanel" aria-labelledby="tab-top10">
+    <div class="matrix-toolbar">
+      <span class="hint">Each KAM's top 10 merchants by total orders across the current date window, with today's count and a quick trend.</span>
+    </div>
+    <div class="top10-grid" id="top10Grid"></div>
   </div>
 
   <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
@@ -946,7 +983,7 @@ function renderDashboardInner(){
 }
 
 /* ---------------- tab switching ---------------- */
-const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix'];
+const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix','top10'];
 
 function activeTab(){
   return (document.querySelector('.tabbtn.active') || {}).dataset?.tab || 'dashboard';
@@ -994,6 +1031,7 @@ function renderActiveTab(tab){
   else if (tab === 'merchantMatrix') renderMerchantMatrix();
   else if (tab === 'kamSummary') renderKamSummary();
   else if (tab === 'kamMatrix') renderKamMatrix();
+  else if (tab === 'top10') renderTop10();
 }
 
 /* ---------------- flagged tab ---------------- */
@@ -1215,6 +1253,75 @@ function renderKamSummaryInner(table){
     </tr></tfoot>`;
 
   table.innerHTML = thead + `<tbody>${rows}</tbody>` + tfoot;
+}
+
+/* ---------------- top 10 merchants (per KAM) ---------------- */
+function renderTop10(){
+  const wrap = document.getElementById('top10Grid');
+  try { renderTop10Inner(wrap); }
+  catch(err){ renderTabError(wrap.parentElement, err); }
+}
+function renderTop10Inner(wrap){
+  if (!STATE.merchants.length){ wrap.innerHTML = ''; return; }
+  const dates = STATE.dates;
+  const todayIdx = dates.length - 1;
+  const last7start = Math.max(0, dates.length - 7);
+  const dateWindow = dates.slice(last7start);
+
+  const groups = buildGroups(STATE.merchants);
+  const kams = Object.keys(groups).sort();
+
+  if (!kams.length){ wrap.innerHTML = '<div class="empty-state"><div class="big">No KAMs found</div></div>'; return; }
+
+  wrap.innerHTML = kams.map(kam => {
+    const list = groups[kam].map(m => {
+      const orders = safeOrders(m.orders);
+      const total = orders.reduce((a,v) => a + (Number(v) || 0), 0);
+      const today = orders[todayIdx];
+      const flagged = isFlagged(orders);
+      return { m, orders, total, today, flagged };
+    });
+    const kamTotal = list.reduce((a,r) => a + r.total, 0);
+    const top = list.slice().sort((a,b) => b.total - a.total).slice(0, 10);
+    const topSum = top.reduce((a,r) => a + r.total, 0);
+    const share = kamTotal ? Math.round((topSum / kamTotal) * 100) : 0;
+
+    const rowsHtml = top.map((r,i) => {
+      const orderWindow = r.orders.slice(last7start);
+      const spark = sparklineSVG(orderWindow, dateWindow);
+      const tip = dayTip(r.m.businessName + ' · #' + r.m.businessId, dateWindow, orderWindow).replace(/"/g, '&quot;');
+      const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      return `<tr class="${r.flagged ? 'flagged' : ''}">
+          <td><span class="t10-rank ${rankCls}">${i+1}</span></td>
+          <td>
+            <div class="mname">${r.flagged ? '<span class="flag-pip"></span>' : ''}${esc(r.m.businessName)}</div>
+            <div class="mid">#${esc(r.m.businessId)}</div>
+          </td>
+          <td class="num">${fmtNum(r.total)}</td>
+          <td class="num">${r.today ?? '–'}</td>
+          <td><div class="spark-wrap" data-tip="${tip}">${spark}</div></td>
+          <td>${r.flagged ? `<span class="badge off">OFF ${flaggedDays(r.orders)}D</span>` : ''}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="top10-card">
+        <div class="t10-head">
+          <div class="left">
+            <span class="name">${esc(kam)}</span>
+            <span class="count">${list.length} merchant${list.length > 1 ? 's' : ''}</span>
+          </div>
+          <div class="t10-stat">Top 10 = ${fmtNum(topSum)} orders <span class="mid">(${share}% of KAM total)</span></div>
+        </div>
+        <table class="top10-table">
+          <thead><tr>
+            <th></th><th>Merchant</th><th class="num">Total (window)</th><th class="num">Today</th>
+            <th>Last ${dateWindow.length}d</th><th></th>
+          </tr></thead>
+          <tbody>${rowsHtml || '<tr><td colspan="6">No merchants for this KAM.</td></tr>'}</tbody>
+        </table>
+      </div>`;
+  }).join('');
 }
 
 /* ---------------- events ---------------- */
