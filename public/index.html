@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Merchant Pulse — DOD Order Dashboard</title>
+<title>BEEACON — DOD Order Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
@@ -391,7 +391,7 @@
     <div class="brand">
       <div class="brand-mark"></div>
       <div>
-        <h1>Merchant Pulse</h1>
+        <h1>BEEACON</h1>
         <p>Day-over-day order tracking · AD Team</p>
       </div>
     </div>
@@ -492,7 +492,7 @@
     <div class="top10-grid" id="top10Grid"></div>
   </div>
 
-  <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
+  <footer id="footNote">BEEACON · reads live from AD TEAM DATA</footer>
 </div>
 
 <div class="tip" id="tipEl" role="tooltip"></div>
@@ -894,7 +894,7 @@ function renderDashboardInner(){
   }
 
   document.getElementById('footNote').textContent =
-    'Merchant Pulse · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
+    'BEEACON · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
 
   const container = document.getElementById('kamSections');
   container.innerHTML = "";
