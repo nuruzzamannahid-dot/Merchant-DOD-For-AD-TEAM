@@ -1,15 +1,59 @@
-{
-  "name": "merchant-dod-dashboard",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2",
-    "@libsql/client": "^0.14.0"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
+diff --git a/public/index.html b/public/index.html
+index 060aaf5..6958773 100644
+--- a/public/index.html
++++ b/public/index.html
+@@ -3,7 +3,7 @@
+ <head>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-<title>Merchant Pulse — DOD Order Dashboard</title>
++<title>Beeacon — DOD Order Dashboard</title>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+ <script>
+@@ -391,7 +391,7 @@
+     <div class="brand">
+       <div class="brand-mark"></div>
+       <div>
+-        <h1>Merchant Pulse</h1>
++        <h1>Beeacon</h1>
+         <p>Day-over-day order tracking · AD Team</p>
+       </div>
+     </div>
+@@ -492,7 +492,7 @@
+     <div class="top10-grid" id="top10Grid"></div>
+   </div>
+ 
+-  <footer id="footNote">Merchant Pulse · reads live from AD TEAM DATA</footer>
++  <footer id="footNote">Beeacon · reads live from AD TEAM DATA</footer>
+ </div>
+ 
+ <div class="tip" id="tipEl" role="tooltip"></div>
+@@ -894,7 +894,7 @@ function renderDashboardInner(){
+   }
+ 
+   document.getElementById('footNote').textContent =
+-    'Merchant Pulse · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
++    'Beeacon · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
+ 
+   const container = document.getElementById('kamSections');
+   container.innerHTML = "";
+diff --git a/server.js b/server.js
+index 6cc3514..d09868e 100644
+--- a/server.js
++++ b/server.js
+@@ -189,12 +189,12 @@ ensureSchema()
+   .then(() => {
+     console.log('Turso schema ready.');
+     app.listen(PORT, () => {
+-      console.log(`Merchant Pulse server running on port ${PORT}`);
++      console.log(`Beeacon server running on port ${PORT}`);
+     });
+   })
+   .catch(err => {
+     console.error('Failed to set up Turso schema — starting anyway:', err);
+     app.listen(PORT, () => {
+-      console.log(`Merchant Pulse server running on port ${PORT}`);
++      console.log(`Beeacon server running on port ${PORT}`);
+     });
+   });
