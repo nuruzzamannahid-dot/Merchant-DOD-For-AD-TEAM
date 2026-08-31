@@ -443,7 +443,6 @@
       <div class="stat alertstat"><div class="stat-top"><span class="stat-icon" data-icon="alert"></span><span class="lbl">Off 2+ days</span></div><div class="num" id="statAlerts">–</div></div>
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total COD</span></div><div class="num" id="statCod">–</div></div>
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total Revenue</span></div><div class="num" id="statRevenue">–</div></div>
-      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total Delivery Charge</span></div><div class="num" id="statDeliveryCharge">–</div></div>
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="sync"></span><span class="lbl">Last synced</span></div><div class="num" id="statSynced">–</div></div>
     </section>
 
@@ -789,8 +788,7 @@ async function loadData(){
       ...m,
       orders: normalizeOrders(m.orders, STATE.dates.length),
       cod: normalizeOrders(m.cod, STATE.dates.length),
-      revenue: normalizeOrders(m.revenue, STATE.dates.length),
-      deliveryCharge: normalizeOrders(m.deliveryCharge, STATE.dates.length)
+      revenue: normalizeOrders(m.revenue, STATE.dates.length)
     }));
     STATE.lastSync = Date.now();
     STATE.hasData = true;
@@ -894,17 +892,12 @@ function renderDashboardInner(){
     const revArr = safeOrders(m.revenue);
     return sum + revArr.reduce((s, v) => s + (Number(v) || 0), 0);
   }, 0);
-  const totalDeliveryCharge = STATE.merchants.reduce((sum, m) => {
-    const dcArr = safeOrders(m.deliveryCharge);
-    return sum + dcArr.reduce((s, v) => s + (Number(v) || 0), 0);
-  }, 0);
 
   document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
   document.getElementById('statToday').textContent = fmtNum(todayTotal);
   document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
   document.getElementById('statCod').textContent = fmtMoney(totalCod);
   document.getElementById('statRevenue').textContent = fmtMoney(totalRevenue);
-  document.getElementById('statDeliveryCharge').textContent = fmtMoney(totalDeliveryCharge);
   document.getElementById('statSynced').textContent = fmtDateTime(STATE.lastSync) || "–";
 
   // today trend vs yesterday
