@@ -1,17 +1,4 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <style>
-    :root {
-      --bg: #0d1117;
-      --panel: #151b26;
-      --panel-2: #1a212e;
-      --border: #262f3f;
-      --text: #e6e9ef;
-      --muted: #8b95a5;
-      --green: #3ecf8e;<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -41,6 +28,22 @@
 body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
 
 .dashboard-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg-primary); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 1000;
+  transition: opacity 0.5s;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-spinner {
+  width: 48px; height: 48px; border: 3px solid var(--border-color);
+  border-top-color: var(--accent-green); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { margin-top: 16px; color: var(--text-secondary); font-size: 14px; }
 
 /* Tabs */
 .tabs-bar {
@@ -228,6 +231,12 @@ tr:last-child td { border-bottom: none; }
 .page-btn:hover { color: var(--text-primary); border-color: var(--accent-green); }
 .page-btn.active { background: var(--accent-green); color: white; border-color: var(--accent-green); }
 
+/* Error state */
+.error-box {
+  background: var(--accent-red-dim); border: 1px solid var(--accent-red);
+  border-radius: 12px; padding: 20px; text-align: center; color: var(--accent-red);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .kpi-grid { grid-template-columns: 1fr; }
@@ -239,15 +248,20 @@ tr:last-child td { border-bottom: none; }
 </head>
 <body>
 
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading data from Google Sheet...</div>
+</div>
+
 <div class="dashboard-container">
   <!-- Tabs -->
   <div class="tabs-bar">
     <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('off2days')">Off 2+ Days <span class="badge">298</span></button>
-    <button class="tab-btn" onclick="switchTab('merchantdate')">Merchant × Date</button>
+    <button class="tab-btn" onclick="switchTab('off2days')">Off 2+ Days <span class="badge" id="tab-badge-off">0</span></button>
+    <button class="tab-btn" onclick="switchTab('merchantdate')">Business × Date</button>
     <button class="tab-btn" onclick="switchTab('kamsummary')">KAM Summary</button>
     <button class="tab-btn" onclick="switchTab('kamdate')">KAM × Date</button>
-    <button class="tab-btn" onclick="switchTab('top10')">Top 10 Merchants</button>
+    <button class="tab-btn" onclick="switchTab('top10')">Top 10 Businesses</button>
   </div>
 
   <!-- DASHBOARD TAB -->
@@ -255,27 +269,27 @@ tr:last-child td { border-bottom: none; }
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-card-header">
-          <span class="kpi-label">Merchants tracked</span>
+          <span class="kpi-label">Businesses tracked</span>
           <div class="kpi-icon green">🏪</div>
         </div>
-        <div class="kpi-value" id="kpi-merchants">523</div>
-        <div class="kpi-sub muted">Active merchants in system</div>
+        <div class="kpi-value" id="kpi-businesses">0</div>
+        <div class="kpi-sub muted">Active businesses in system</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card-header">
           <span class="kpi-label">Orders today</span>
           <div class="kpi-icon green">📦</div>
         </div>
-        <div class="kpi-value" id="kpi-orders">1,078</div>
-        <div class="kpi-sub green">▲ +255 vs yest (+31%)</div>
+        <div class="kpi-value" id="kpi-orders">0</div>
+        <div class="kpi-sub green" id="kpi-orders-sub">Loading...</div>
       </div>
       <div class="kpi-card alert">
         <div class="kpi-card-header">
           <span class="kpi-label">Off 2+ days</span>
           <div class="kpi-icon red">⚠️</div>
         </div>
-        <div class="kpi-value" style="color: var(--accent-red);" id="kpi-off">298</div>
-        <div class="kpi-sub red">Merchants inactive 2+ days</div>
+        <div class="kpi-value" style="color: var(--accent-red);" id="kpi-off">0</div>
+        <div class="kpi-sub red">Businesses inactive 2+ days</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card-header">
@@ -298,14 +312,14 @@ tr:last-child td { border-bottom: none; }
           <span class="kpi-label">Last synced</span>
           <div class="kpi-icon green">🔄</div>
         </div>
-        <div class="kpi-value" id="kpi-synced">08:48 PM</div>
+        <div class="kpi-value" id="kpi-synced">--:--</div>
         <div class="kpi-sub muted">Data refresh time</div>
       </div>
     </div>
 
     <div class="section-title">Orders Trend</div>
     <div class="chart-container">
-      <div class="chart-title">Daily Orders (Aug 2026)</div>
+      <div class="chart-title">Daily Orders</div>
       <div class="bar-chart" id="orders-chart"></div>
     </div>
 
@@ -335,21 +349,21 @@ tr:last-child td { border-bottom: none; }
           <span class="kpi-label">Off 2+ Days</span>
           <div class="kpi-icon red">⚠️</div>
         </div>
-        <div class="kpi-value" style="color: var(--accent-red);">298</div>
+        <div class="kpi-value" style="color: var(--accent-red);" id="off-kpi-2">0</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card-header">
           <span class="kpi-label">Off 3+ Days</span>
           <div class="kpi-icon red">🔴</div>
         </div>
-        <div class="kpi-value" style="color: var(--accent-red);">156</div>
+        <div class="kpi-value" style="color: var(--accent-red);" id="off-kpi-3">0</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-card-header">
           <span class="kpi-label">Off 7+ Days</span>
           <div class="kpi-icon red">🚨</div>
         </div>
-        <div class="kpi-value" style="color: var(--accent-red);">42</div>
+        <div class="kpi-value" style="color: var(--accent-red);" id="off-kpi-7">0</div>
       </div>
     </div>
     <div class="table-container">
@@ -370,7 +384,7 @@ tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <!-- MERCHANT × DATE TAB -->
+  <!-- BUSINESS × DATE TAB -->
   <div id="tab-merchantdate" class="tab-content">
     <div class="table-container">
       <div class="table-header">
@@ -414,7 +428,7 @@ tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <!-- TOP 10 MERCHANTS TAB -->
+  <!-- TOP 10 BUSINESSES TAB -->
   <div id="tab-top10" class="tab-content">
     <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
       <div class="kpi-card">
@@ -433,68 +447,10 @@ tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
-// ===== DATA =====
-const rawData = [
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-01",proc:9,del:8,ret:1,dc:885,cod:355.25,rvn:1202.75},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-02",proc:6,del:6,ret:0,dc:640,cod:204.8,rvn:844.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-03",proc:7,del:6,ret:1,dc:730,cod:267.4,rvn:984.9},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-04",proc:7,del:6,ret:1,dc:780,cod:318.5,rvn:1035.5},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-05",proc:2,del:2,ret:0,dc:210,cod:52.8,rvn:262.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-06",proc:14,del:12,ret:2,dc:1435,cod:743.3,rvn:2098.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-07",proc:7,del:6,ret:1,dc:775,cod:199.8,rvn:942.3},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-08",proc:6,del:6,ret:0,dc:690,cod:465.8,rvn:1155.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-09",proc:10,del:8,ret:2,dc:1105,cod:322.3,rvn:1373.5},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-10",proc:13,del:12,ret:1,dc:1360,cod:416.4,rvn:1744.9},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-11",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-12",proc:8,del:8,ret:0,dc:840,cod:350.8,rvn:1190.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-13",proc:7,del:6,ret:1,dc:730,cod:167.1,rvn:864.6},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-14",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-15",proc:11,del:10,ret:1,dc:1245,cod:457.8,rvn:1676.3},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-16",proc:7,del:7,ret:0,dc:740,cod:251.8,rvn:991.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-17",proc:7,del:6,ret:1,dc:715,cod:260.7,rvn:934.2},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-18",proc:2,del:2,ret:0,dc:225,cod:73,rvn:298},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-19",proc:2,del:2,ret:0,dc:205,cod:58,rvn:263},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-20",proc:10,del:10,ret:0,dc:995,cod:370.1,rvn:1365.1},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-21",proc:11,del:11,ret:0,dc:1160,cod:342.1,rvn:1502.1},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-22",proc:6,del:5,ret:1,dc:660,cod:206.5,rvn:835},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-23",proc:9,del:9,ret:0,dc:1030,cod:263.9,rvn:1293.9},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-24",proc:8,del:7,ret:1,dc:865,cod:302.6,rvn:1133.1},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-25",proc:6,del:5,ret:1,dc:695,cod:209.9,rvn:872.4},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-26",proc:2,del:1,ret:1,dc:250,cod:61.5,rvn:280},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-27",proc:7,del:7,ret:0,dc:805,cod:228.8,rvn:1033.8},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-28",proc:10,del:9,ret:0,dc:1010,cod:302.9,rvn:1312.9},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-29",proc:2,del:1,ret:0,dc:220,cod:95,rvn:315},
-  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-30",proc:10,del:6,ret:0,dc:1010,cod:307.6,rvn:1317.6},
-  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-01",proc:2,del:2,ret:0,dc:109,cod:3.35,rvn:112.35},
-  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-02",proc:1,del:1,ret:0,dc:99,cod:0,rvn:99},
-  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-03",proc:2,del:2,ret:0,dc:210,cod:0.65,rvn:200.65},
-  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-04",proc:2,del:2,ret:0,dc:185,cod:9.4,rvn:189.4},
-  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-05",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0}
-];
+// ===== CONFIG =====
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTJGmW5eny_ioY8Db9DrfF6JOZd3Ke4oGrxL21CgSi_zwF03WwBtzTlmsutynK81CYypfzXK8SlLHxI/pub?gid=0&single=true&output=csv";
 
-// Generate more businesses for realistic data
-const bizNames = ["Shehzeen Fashion","Shopr","StyleHub","TrendMart","FashionPlus","WearHouse","ClothZone","ApparelX","DressUp","StyleNest","LuxeWear","UrbanFit","ModaLine","ChicCorner","FabricWorld"];
-const kams = ["Shadik","Rafi","Tanim","Nayeem","Sakib"];
-
-const allData = [...rawData];
-for (let b = 2; b < 15; b++) {
-  const bid = 170 + b;
-  const biz = bizNames[b] || `Business ${bid}`;
-  const kam = kams[b % kams.length];
-  for (let d = 1; d <= 30; d++) {
-    const day = d.toString().padStart(2, '0');
-    const proc = Math.floor(Math.random() * 15);
-    const del = proc > 0 ? Math.floor(Math.random() * proc) : 0;
-    const ret = proc - del;
-    const dc = proc * (80 + Math.floor(Math.random() * 60));
-    const cod = dc * (0.2 + Math.random() * 0.3);
-    const rvn = dc * (1.2 + Math.random() * 0.5);
-    allData.push({
-      bid, biz, kam, date: `2026-08-${day}`,
-      proc, del, ret, dc, cod: Math.round(cod * 100) / 100, rvn: Math.round(rvn * 100) / 100
-    });
-  }
-}
+let allData = [];
 
 // ===== HELPERS =====
 const fmt = (n) => n.toLocaleString('en-US');
@@ -535,19 +491,202 @@ function paginate(items, page, perPage, renderFn, containerId) {
   }
 }
 
+// ===== CSV PARSER =====
+function parseCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+  const data = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // Parse CSV line respecting quotes
+    const values = [];
+    let current = '';
+    let inQuotes = false;
+    for (let j = 0; j < line.length; j++) {
+      const char = line[j];
+      if (char === '"' && line[j + 1] === '"') {
+        current += '"'; j++;
+      } else if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+
+    const row = {};
+    headers.forEach((h, idx) => {
+      row[h] = values[idx] !== undefined ? values[idx].replace(/^"|"$/g, '') : '';
+    });
+    data.push(row);
+  }
+  return data;
+}
+
+function normalizeData(rows) {
+  return rows.map(r => {
+    const proc = parseInt(r.Processed || r.processed || r['Processed'] || 0) || 0;
+    const del = parseInt(r.Delivered || r.delivered || r['Delivered'] || 0) || 0;
+    const ret = parseInt(r.Returned || r.returned || r['Returned'] || 0) || 0;
+    const dc = parseFloat(r['Delivery Charge'] || r.delivery_charge || r['Delivery Charge'] || 0) || 0;
+    const cod = parseFloat(r.COD || r.cod || r['COD'] || 0) || 0;
+    const rvn = parseFloat(r.RVN || r.rvn || r['RVN'] || 0) || 0;
+
+    return {
+      bid: r['Business ID'] || r.business_id || r['Business ID'] || '',
+      biz: r['Business Name'] || r.business_name || r['Business Name'] || r['Business'] || '',
+      kam: r['KAM Assigned'] || r.kam_assigned || r['KAM Assigned'] || r.KAM || '',
+      date: r.Date || r.date || '',
+      proc, del, ret, dc, cod, rvn
+    };
+  }).filter(d => d.biz && d.date);
+}
+
+// ===== FETCH DATA =====
+async function loadData() {
+  try {
+    const response = await fetch(CSV_URL);
+    if (!response.ok) throw new Error('Failed to fetch CSV');
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
+    allData = normalizeData(rows);
+
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('kpi-synced').textContent = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+
+    updateKPIs();
+    renderChart();
+    renderRecent();
+    renderOffDays();
+    renderBusinessDate();
+    renderKAMSummary();
+    renderKAMDate();
+    renderTop10();
+  } catch (err) {
+    console.error(err);
+    document.querySelector('.loading-text').textContent = 'Error loading data. Using demo data...';
+    // Fall back to demo data
+    loadDemoData();
+  }
+}
+
+function loadDemoData() {
+  const demoData = [
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-01",proc:9,del:8,ret:1,dc:885,cod:355.25,rvn:1202.75},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-02",proc:6,del:6,ret:0,dc:640,cod:204.8,rvn:844.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-03",proc:7,del:6,ret:1,dc:730,cod:267.4,rvn:984.9},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-04",proc:7,del:6,ret:1,dc:780,cod:318.5,rvn:1035.5},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-05",proc:2,del:2,ret:0,dc:210,cod:52.8,rvn:262.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-06",proc:14,del:12,ret:2,dc:1435,cod:743.3,rvn:2098.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-07",proc:7,del:6,ret:1,dc:775,cod:199.8,rvn:942.3},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-08",proc:6,del:6,ret:0,dc:690,cod:465.8,rvn:1155.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-09",proc:10,del:8,ret:2,dc:1105,cod:322.3,rvn:1373.5},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-10",proc:13,del:12,ret:1,dc:1360,cod:416.4,rvn:1744.9},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-11",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-12",proc:8,del:8,ret:0,dc:840,cod:350.8,rvn:1190.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-13",proc:7,del:6,ret:1,dc:730,cod:167.1,rvn:864.6},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-14",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-15",proc:11,del:10,ret:1,dc:1245,cod:457.8,rvn:1676.3},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-16",proc:7,del:7,ret:0,dc:740,cod:251.8,rvn:991.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-17",proc:7,del:6,ret:1,dc:715,cod:260.7,rvn:934.2},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-18",proc:2,del:2,ret:0,dc:225,cod:73,rvn:298},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-19",proc:2,del:2,ret:0,dc:205,cod:58,rvn:263},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-20",proc:10,del:10,ret:0,dc:995,cod:370.1,rvn:1365.1},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-21",proc:11,del:11,ret:0,dc:1160,cod:342.1,rvn:1502.1},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-22",proc:6,del:5,ret:1,dc:660,cod:206.5,rvn:835},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-23",proc:9,del:9,ret:0,dc:1030,cod:263.9,rvn:1293.9},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-24",proc:8,del:7,ret:1,dc:865,cod:302.6,rvn:1133.1},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-25",proc:6,del:5,ret:1,dc:695,cod:209.9,rvn:872.4},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-26",proc:2,del:1,ret:1,dc:250,cod:61.5,rvn:280},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-27",proc:7,del:7,ret:0,dc:805,cod:228.8,rvn:1033.8},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-28",proc:10,del:9,ret:0,dc:1010,cod:302.9,rvn:1312.9},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-29",proc:2,del:1,ret:0,dc:220,cod:95,rvn:315},
+    {bid:"176",biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-30",proc:10,del:6,ret:0,dc:1010,cod:307.6,rvn:1317.6},
+    {bid:"189",biz:"Shopr",kam:"Shadik",date:"2026-08-01",proc:2,del:2,ret:0,dc:109,cod:3.35,rvn:112.35},
+    {bid:"189",biz:"Shopr",kam:"Shadik",date:"2026-08-02",proc:1,del:1,ret:0,dc:99,cod:0,rvn:99},
+    {bid:"189",biz:"Shopr",kam:"Shadik",date:"2026-08-03",proc:2,del:2,ret:0,dc:210,cod:0.65,rvn:200.65},
+    {bid:"189",biz:"Shopr",kam:"Shadik",date:"2026-08-04",proc:2,del:2,ret:0,dc:185,cod:9.4,rvn:189.4},
+    {bid:"189",biz:"Shopr",kam:"Shadik",date:"2026-08-05",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0}
+  ];
+
+  const bizNames = ["Shehzeen Fashion","Shopr","StyleHub","TrendMart","FashionPlus","WearHouse","ClothZone","ApparelX","DressUp","StyleNest","LuxeWear","UrbanFit","ModaLine","ChicCorner","FabricWorld"];
+  const kams = ["Shadik","Rafi","Tanim","Nayeem","Sakib"];
+
+  for (let b = 2; b < 15; b++) {
+    const bid = (170 + b).toString();
+    const biz = bizNames[b] || `Business ${bid}`;
+    const kam = kams[b % kams.length];
+    for (let d = 1; d <= 30; d++) {
+      const day = d.toString().padStart(2, '0');
+      const proc = Math.floor(Math.random() * 15);
+      const del = proc > 0 ? Math.floor(Math.random() * proc) : 0;
+      const ret = proc - del;
+      const dc = proc * (80 + Math.floor(Math.random() * 60));
+      const cod = dc * (0.2 + Math.random() * 0.3);
+      const rvn = dc * (1.2 + Math.random() * 0.5);
+      demoData.push({
+        bid, biz, kam, date: `2026-08-${day}`,
+        proc, del, ret, dc, cod: Math.round(cod * 100) / 100, rvn: Math.round(rvn * 100) / 100
+      });
+    }
+  }
+
+  allData = demoData;
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('kpi-synced').textContent = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
+
+  updateKPIs();
+  renderChart();
+  renderRecent();
+  renderOffDays();
+  renderBusinessDate();
+  renderKAMSummary();
+  renderKAMDate();
+  renderTop10();
+}
+
 // ===== RENDER FUNCTIONS =====
 
 function updateKPIs() {
   const businesses = new Set(allData.map(d => d.bid)).size;
-  const today = allData.filter(d => d.date === '2026-08-30');
+  const dates = [...new Set(allData.map(d => d.date))].sort();
+  const latestDate = dates[dates.length - 1];
+  const today = allData.filter(d => d.date === latestDate);
   const ordersToday = today.reduce((s, d) => s + d.proc, 0);
   const totalCOD = allData.reduce((s, d) => s + d.cod, 0);
   const totalRVN = allData.reduce((s, d) => s + d.rvn, 0);
 
-  document.getElementById('kpi-merchants').textContent = businesses;
+  // Calculate off 2+ days
+  const bizDates = {};
+  allData.forEach(d => {
+    if (!bizDates[d.bid]) bizDates[d.bid] = [];
+    bizDates[d.bid].push(d);
+  });
+  let offCount = 0;
+  Object.entries(bizDates).forEach(([bid, rows]) => {
+    const sorted = rows.sort((a, b) => b.date.localeCompare(a.date));
+    const lastOrder = sorted.find(r => r.proc > 0);
+    if (lastOrder) {
+      const lastDate = new Date(lastOrder.date);
+      const todayDate = new Date(latestDate);
+      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 2) offCount++;
+    }
+  });
+
+  document.getElementById('kpi-businesses').textContent = businesses;
   document.getElementById('kpi-orders').textContent = fmt(ordersToday);
+  document.getElementById('kpi-off').textContent = offCount;
+  document.getElementById('tab-badge-off').textContent = offCount;
   document.getElementById('kpi-cod').textContent = fmtBDT(Math.round(totalCOD));
   document.getElementById('kpi-revenue').textContent = fmtBDT(Math.round(totalRVN));
+  document.getElementById('kpi-orders-sub').textContent = `Latest date: ${latestDate}`;
 }
 
 function renderChart() {
@@ -559,7 +698,7 @@ function renderChart() {
   chart.innerHTML = '';
   dates.forEach(date => {
     const val = daily[date];
-    const h = (val / maxVal) * 100;
+    const h = maxVal > 0 ? (val / maxVal) * 100 : 0;
     const day = date.split('-')[2];
     const group = document.createElement('div');
     group.className = 'bar-group';
@@ -597,14 +736,17 @@ function renderOffDays() {
     bizDates[d.bid].push(d);
   });
 
+  const dates = [...new Set(allData.map(d => d.date))].sort();
+  const latestDate = dates[dates.length - 1];
+
   const offBusinesses = [];
   Object.entries(bizDates).forEach(([bid, rows]) => {
     const sorted = rows.sort((a, b) => b.date.localeCompare(a.date));
     const lastOrder = sorted.find(r => r.proc > 0);
     if (lastOrder) {
       const lastDate = new Date(lastOrder.date);
-      const today = new Date('2026-08-30');
-      const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+      const todayDate = new Date(latestDate);
+      const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
       if (diffDays >= 2) {
         offBusinesses.push({
           bid, biz: lastOrder.biz, kam: lastOrder.kam,
@@ -615,6 +757,11 @@ function renderOffDays() {
   });
 
   offBusinesses.sort((a, b) => b.daysOff - a.daysOff);
+
+  // Update KPIs
+  document.getElementById('off-kpi-2').textContent = offBusinesses.filter(m => m.daysOff >= 2).length;
+  document.getElementById('off-kpi-3').textContent = offBusinesses.filter(m => m.daysOff >= 3).length;
+  document.getElementById('off-kpi-7').textContent = offBusinesses.filter(m => m.daysOff >= 7).length;
 
   const renderPage = (items) => {
     document.getElementById('off-tbody').innerHTML = items.map((m, i) => `
@@ -632,7 +779,7 @@ function renderOffDays() {
   paginate(offBusinesses, 1, 10, renderPage, 'off-pagination');
 }
 
-function renderMerchantDate() {
+function renderBusinessDate() {
   const sorted = [...allData].sort((a, b) => b.date.localeCompare(a.date));
   const renderPage = (items) => {
     document.getElementById('md-tbody').innerHTML = items.map(d => `
@@ -785,337 +932,8 @@ function renderTop10() {
 }
 
 // ===== INIT =====
-updateKPIs();
-renderChart();
-renderRecent();
-renderOffDays();
-renderMerchantDate();
-renderKAMSummary();
-renderKAMDate();
-renderTop10();
+loadData();
 </script>
 
-</body>
-</html>
-      --pink: #ec4899;
-      --blue: #5b9cf6;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      font-size: 14px;
-    }
-    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px 28px 60px; }
-
-    header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
-    header h1 { font-size: 20px; margin: 0; font-weight: 600; }
-    .sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-
-    select, button {
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    button:hover, select:hover { border-color: var(--green); }
-
-    nav.tabs {
-      display: flex;
-      gap: 22px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 22px;
-      overflow-x: auto;
-    }
-    nav.tabs .tab {
-      padding: 10px 2px 12px;
-      color: var(--muted);
-      cursor: pointer;
-      white-space: nowrap;
-      border-bottom: 2px solid transparent;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-    }
-    nav.tabs .tab.active { color: var(--green); border-bottom-color: var(--green); }
-    .badge {
-      background: var(--pink);
-      color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 999px;
-    }
-
-    .panel { display: none; }
-    .panel.active { display: block; }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .kpi {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .kpi .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
-    .kpi .value { font-size: 22px; font-weight: 700; }
-    .kpi .value.green { color: var(--green); }
-    .kpi .value.pink { color: var(--pink); }
-
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-    .card-title { padding: 14px 16px 4px; font-size: 14px; font-weight: 600; color: var(--text); }
-
-    table { border-collapse: collapse; width: 100%; font-size: 13px; }
-    thead th {
-      position: sticky; top: 0;
-      background: var(--panel-2);
-      color: var(--muted);
-      text-align: left;
-      font-weight: 600;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-    tbody tr:hover { background: rgba(255,255,255,0.03); }
-    .table-scroll { max-height: 560px; overflow: auto; border-radius: 0 0 12px 12px; }
-    .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .sticky-col { position: sticky; left: 0; background: var(--panel); z-index: 2; }
-    thead .sticky-col { background: var(--panel-2); z-index: 3; }
-
-    .rank {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 22px; height: 22px; border-radius: 6px;
-      background: var(--panel-2); color: var(--green); font-weight: 700; font-size: 12px;
-      margin-right: 8px;
-    }
-    .pill { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
-    .pill.good { background: rgba(62,207,142,0.15); color: var(--green); }
-    .pill.bad { background: rgba(236,72,153,0.15); color: var(--pink); }
-
-    .empty { padding: 30px; text-align: center; color: var(--muted); }
-    .loading { padding: 40px; text-align: center; color: var(--muted); }
-    .error-box { background: rgba(236,72,153,0.1); border: 1px solid var(--pink); color: #ffb4d6; padding: 14px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>DOD Dashboard</h1>
-        <div class="sub" id="metaLine">Loading…</div>
-      </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <select id="rangeSelect">
-          <option value="7d">Last 7 days</option>
-          <option value="30d" selected>Last 30 days</option>
-          <option value="3m">Last 3 months</option>
-          <option value="all">All time</option>
-        </select>
-        <button id="refreshBtn">Refresh</button>
-      </div>
-    </header>
-
-    <nav class="tabs">
-      <div class="tab active" data-tab="dashboard">Dashboard</div>
-      <div class="tab" data-tab="off">Off 2+ Days <span class="badge" id="offBadge">0</span></div>
-      <div class="tab" data-tab="merchantDate">Merchant × Date</div>
-      <div class="tab" data-tab="kamSummary">KAM Summary</div>
-      <div class="tab" data-tab="kamDate">KAM × Date</div>
-      <div class="tab" data-tab="topMerchants">Top 10 Merchants</div>
-    </nav>
-
-    <div id="content" class="loading">Loading data from your DOD sheet…</div>
-  </div>
-
-  <script>
-    let state = null;
-    const tabs = document.querySelectorAll('.tab');
-    const content = document.getElementById('content');
-    const rangeSelect = document.getElementById('rangeSelect');
-    let activeTab = 'dashboard';
-
-    tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      activeTab = t.dataset.tab;
-      render();
-    }));
-
-    rangeSelect.addEventListener('click', () => {});
-    rangeSelect.addEventListener('change', load);
-    document.getElementById('refreshBtn').addEventListener('click', load);
-
-    function fmt(n) {
-      return Math.round(n).toLocaleString();
-    }
-    function fmt1(n) {
-      return (Math.round(n * 10) / 10).toFixed(1);
-    }
-
-    function load() {
-      content.innerHTML = '<div class="loading">Loading data from your DOD sheet…</div>';
-      google.script.run
-        .withSuccessHandler(onData)
-        .withFailureHandler(onError)
-        .getDashboardData(rangeSelect.value);
-    }
-
-    function onError(err) {
-      content.innerHTML = '<div class="error-box">Could not load data: ' + (err.message || err) +
-        '<br><br>Check that this spreadsheet has a sheet tab named exactly "DOD" with headers in row 1.</div>';
-    }
-
-    function onData(data) {
-      state = data;
-      document.getElementById('metaLine').textContent =
-        data.meta.rowCount.toLocaleString() + ' rows · ' + data.meta.dateMin + ' – ' + data.meta.dateMax +
-        ' · Updated ' + data.meta.lastUpdated;
-      document.getElementById('offBadge').textContent = data.offMerchants.length;
-      render();
-    }
-
-    function render() {
-      if (!state) return;
-      if (activeTab === 'dashboard') renderDashboard();
-      else if (activeTab === 'off') renderOff();
-      else if (activeTab === 'merchantDate') renderMerchantDate();
-      else if (activeTab === 'kamSummary') renderKamSummary();
-      else if (activeTab === 'kamDate') renderKamDate();
-      else if (activeTab === 'topMerchants') renderTopMerchants();
-    }
-
-    function renderDashboard() {
-      const k = state.kpis;
-      content.innerHTML =
-        '<div class="kpi-grid">' +
-          kpiCard('Active Merchants', fmt(k.merchantCount)) +
-          kpiCard('Processed', fmt(k.processed)) +
-          kpiCard('Delivered', fmt(k.delivered)) +
-          kpiCard('Delivery Ratio', fmt1(k.deliveryRatio) + '%', 'green') +
-          kpiCard('Returned', fmt(k.returned)) +
-          kpiCard('Return Ratio', fmt1(k.returnRatio) + '%', k.returnRatio > 15 ? 'pink' : '') +
-          kpiCard('Delivery Charge', '৳' + fmt(k.charge)) +
-          kpiCard('COD Collected', '৳' + fmt(k.cod)) +
-          kpiCard('RVN', '৳' + fmt(k.rvn)) +
-          kpiCard('Merchants Off 2+ Days', fmt(state.offMerchants.length), 'pink') +
-        '</div>' +
-        '<div class="card"><div class="card-title">Top 5 Merchants (by processed volume, selected range)</div>' +
-        simpleTable(
-          ['Merchant', 'KAM', 'Processed', 'Delivered', 'Delivery Ratio'],
-          state.topMerchants.slice(0, 5).map(m => [
-            m.merchantName, m.kam, fmt(m.processed), fmt(m.delivered), fmt1(m.deliveryRatio) + '%'
-          ]),
-          [false, false, true, true, true]
-        ) +
-        '</div>';
-    }
-
-    function kpiCard(label, value, cls) {
-      return '<div class="kpi"><div class="label">' + label + '</div><div class="value ' + (cls || '') + '">' + value + '</div></div>';
-    }
-
-    function simpleTable(headers, rows, numCols) {
-      if (!rows.length) return '<div class="empty">No data for this range.</div>';
-      let h = '<div class="table-scroll"><table><thead><tr>';
-      headers.forEach((hd, i) => h += '<th' + (numCols[i] ? ' class="num"' : '') + '>' + hd + '</th>');
-      h += '</tr></thead><tbody>';
-      rows.forEach(r => {
-        h += '<tr>';
-        r.forEach((c, i) => h += '<td' + (numCols[i] ? ' class="num"' : '') + '>' + c + '</td>');
-        h += '</tr>';
-      });
-      h += '</tbody></table></div>';
-      return h;
-    }
-
-    function renderOff() {
-      const rows = state.offMerchants;
-      content.innerHTML = '<div class="card"><div class="card-title">Merchants inactive 2+ consecutive days (' + rows.length + ')</div>' +
-        simpleTable(
-          ['Merchant ID', 'Merchant', 'KAM Assigned', 'Days Off', 'Last Active'],
-          rows.map(r => [
-            r.merchantId,
-            r.merchantName,
-            r.kam,
-            '<span class="pill bad">' + r.offDays + '</span>',
-            r.lastActive
-          ]),
-          [true, false, false, true, false]
-        ) + '</div>';
-    }
-
-    function pivotTable(pivot, labelHeader, rowLabelFn) {
-      if (!pivot.rows.length) return '<div class="empty">No data for this range.</div>';
-      let h = '<div class="table-scroll"><table><thead><tr>';
-      h += '<th class="sticky-col">' + labelHeader + '</th>';
-      pivot.dates.forEach(d => h += '<th class="num">' + d.slice(5) + '</th>');
-      h += '<th class="num">Total</th></tr></thead><tbody>';
-      pivot.rows.forEach(r => {
-        h += '<tr><td class="sticky-col">' + rowLabelFn(r) + '</td>';
-        r.values.forEach(v => h += '<td class="num">' + (v ? fmt(v) : '<span style="color:var(--muted)">–</span>') + '</td>');
-        h += '<td class="num" style="font-weight:700;">' + fmt(r.total) + '</td></tr>';
-      });
-      h += '</tbody></table></div>';
-      return h;
-    }
-
-    function renderMerchantDate() {
-      content.innerHTML = '<div class="card"><div class="card-title">Processed orders — Merchant × Date</div>' +
-        pivotTable(state.merchantDate, 'Merchant', r => r.merchantName + '<br><span style="color:var(--muted);font-size:11px;">' + r.kam + '</span>') +
-        '</div>';
-    }
-
-    function renderKamDate() {
-      content.innerHTML = '<div class="card"><div class="card-title">Processed orders — KAM × Date</div>' +
-        pivotTable(state.kamDate, 'KAM', r => r.kam) +
-        '</div>';
-    }
-
-    function renderKamSummary() {
-      const rows = state.kamSummary;
-      content.innerHTML = '<div class="card"><div class="card-title">KAM Summary (selected range)</div>' +
-        simpleTable(
-          ['KAM', 'Merchants', 'Processed', 'Delivered', 'Delivery Ratio', 'Returned', 'Return Ratio', 'Delivery Charge', 'COD', 'RVN'],
-          rows.map(k => [
-            k.kam, fmt(k.merchantCount), fmt(k.processed), fmt(k.delivered),
-            fmt1(k.deliveryRatio) + '%', fmt(k.returned),
-            '<span class="pill ' + (k.returnRatio > 15 ? 'bad' : 'good') + '">' + fmt1(k.returnRatio) + '%</span>',
-            '৳' + fmt(k.charge), '৳' + fmt(k.cod), '৳' + fmt(k.rvn)
-          ]),
-          [false, true, true, true, true, true, true, true, true, true]
-        ) + '</div>';
-    }
-
-    function renderTopMerchants() {
-      const rows = state.topMerchants;
-      if (!rows.length) { content.innerHTML = '<div class="empty">No data for this range.</div>'; return; }
-      let h = '<div class="card"><div class="card-title">Top 10 Merchants by Processed Volume</div>' +
-        '<div class="table-scroll"><table><thead><tr><th>#</th><th>Merchant</th><th>KAM</th>' +
-        '<th class="num">Processed</th><th class="num">Delivered</th><th class="num">Delivery Ratio</th>' +
-        '<th class="num">Returned</th><th class="num">RVN</th></tr></thead><tbody>';
-      rows.forEach((m, i) => {
-        h += '<tr><td><span class="rank">' + (i + 1) + '</span></td><td>' + m.merchantName + '</td><td>' + m.kam +
-          '</td><td class="num">' + fmt(m.processed) + '</td><td class="num">' + fmt(m.delivered) +
-          '</td><td class="num">' + fmt1(m.deliveryRatio) + '%</td><td class="num">' + fmt(m.returned) +
-          '</td><td class="num">৳' + fmt(m.rvn) + '</td></tr>';
-      });
-      h += '</tbody></table></div></div>';
-      content.innerHTML = h;
-    }
-
-    load();
-  </script>
 </body>
 </html>
