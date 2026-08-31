@@ -17,11 +17,15 @@ const turso = createClient({
 // TELEGRAM_CHAT_ID    — your DM chat id with the bot (see README notes)
 // NOTIFY_SECRET       — any random string; Apps Script must send it back to us
 // ALERT_DAYS          — consecutive zero-order days that counts as "flagged" (default 2)
+// INGEST_SECRET       — any random string; the Google Sheet's Apps Script sends
+//                        this back to us so /api/ingest can't be written to by anyone else
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const NOTIFY_SECRET = process.env.NOTIFY_SECRET;
 const ALERT_DAYS = parseInt(process.env.ALERT_DAYS || '2', 10);
+const INGEST_SECRET = process.env.INGEST_SECRET;
 
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 async function ensureSchema() {
@@ -55,6 +59,53 @@ app.get('/api/data', async (req, res) => {
       error: 'Failed to fetch data from Turso',
       detail: String(err)
     });
+  }
+});
+
+// The Google Sheet's Apps Script calls this to push freshly pivoted
+// data in. Body shape: { dates: ["2026-08-01", ...], merchants: [
+//   { businessId, businessName, assignedKam, orders: [9, 6, 7, ...] }
+// ] }. Requires ?secret=INGEST_SECRET (or an x-ingest-secret header).
+app.post('/api/ingest', async (req, res) => {
+  try {
+    const secret = req.query.secret || req.get('x-ingest-secret');
+    if (!INGEST_SECRET || secret !== INGEST_SECRET) {
+      return res.status(401).json({ error: 'Missing or invalid secret.' });
+    }
+
+    const body = req.body || {};
+    const dates = body.dates;
+    const merchants = body.merchants;
+
+    if (!Array.isArray(dates) || !Array.isArray(merchants)) {
+      return res.status(400).json({
+        error: 'Payload must be { dates: [...], merchants: [...] }.'
+      });
+    }
+    for (const m of merchants) {
+      if (!m || typeof m.businessId === 'undefined' || typeof m.businessName === 'undefined') {
+        return res.status(400).json({
+          error: 'Every merchant needs businessId and businessName.'
+        });
+      }
+      if (!Array.isArray(m.orders)) {
+        return res.status(400).json({ error: `Merchant ${m.businessId} is missing an orders array.` });
+      }
+    }
+
+    const payload = JSON.stringify({ dates, merchants });
+    const updatedAt = new Date().toISOString();
+
+    await turso.execute({
+      sql: `INSERT INTO dashboard_data (id, payload, updated_at) VALUES (1, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at`,
+      args: [payload, updatedAt]
+    });
+
+    res.json({ ok: true, dates: dates.length, merchants: merchants.length, updatedAt });
+  } catch (err) {
+    console.error('Ingest failed:', err);
+    res.status(500).json({ error: 'Ingest failed', detail: String(err) });
   }
 });
 
