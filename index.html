@@ -11,7 +11,792 @@
       --border: #262f3f;
       --text: #e6e9ef;
       --muted: #8b95a5;
-      --green: #3ecf8e;
+      --green: #3ecf8e;<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOD Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-primary: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-hover: #222633;
+  --border-color: #2a2e3b;
+  --text-primary: #ffffff;
+  --text-secondary: #8b92a8;
+  --text-muted: #5a6078;
+  --accent-green: #10b981;
+  --accent-green-dim: rgba(16, 185, 129, 0.15);
+  --accent-red: #f43f5e;
+  --accent-red-dim: rgba(244, 63, 94, 0.15);
+  --accent-blue: #3b82f6;
+  --accent-blue-dim: rgba(59, 130, 246, 0.15);
+  --accent-orange: #f59e0b;
+  --accent-teal: #14b8a6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+
+.dashboard-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+/* Tabs */
+.tabs-bar {
+  display: flex; gap: 8px; border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center;
+}
+.tab-btn {
+  background: transparent; border: none; color: var(--text-secondary);
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;
+  font-weight: 500; transition: all 0.2s; position: relative; white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text-primary); background: var(--bg-card); }
+.tab-btn.active { color: var(--accent-green); background: var(--accent-green-dim); }
+.tab-btn .badge {
+  background: var(--accent-red); color: white; font-size: 10px; padding: 2px 6px;
+  border-radius: 10px; margin-left: 6px; font-weight: 700;
+}
+
+/* KPI Cards */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.kpi-card {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; padding: 24px; position: relative; overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.kpi-card:hover { border-color: var(--accent-green); transform: translateY(-2px); }
+.kpi-card.alert { border-color: rgba(244, 63, 94, 0.3); }
+.kpi-card.alert:hover { border-color: var(--accent-red); }
+.kpi-card-header {
+  display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
+}
+.kpi-label { color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+.kpi-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 16px;
+}
+.kpi-icon.green { background: var(--accent-green-dim); color: var(--accent-green); }
+.kpi-icon.red { background: var(--accent-red-dim); color: var(--accent-red); }
+.kpi-icon.blue { background: var(--accent-blue-dim); color: var(--accent-blue); }
+.kpi-icon.teal { background: rgba(20, 184, 166, 0.15); color: var(--accent-teal); }
+.kpi-value { font-size: 32px; font-weight: 800; color: var(--text-primary); letter-spacing: -1px; }
+.kpi-sub {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  font-size: 12px; font-weight: 500;
+}
+.kpi-sub.green { color: var(--accent-green); }
+.kpi-sub.red { color: var(--accent-red); }
+.kpi-sub.muted { color: var(--text-muted); }
+
+/* Section */
+.section-title {
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+  content: ''; width: 3px; height: 16px; background: var(--accent-green); border-radius: 2px;
+}
+
+/* Tables */
+.table-container {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; overflow: hidden; margin-bottom: 24px;
+}
+.table-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+}
+.table-title { font-size: 14px; font-weight: 600; }
+.table-search {
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+  border-radius: 8px; padding: 6px 12px; color: var(--text-primary);
+  font-size: 13px; width: 200px; outline: none;
+}
+.table-search:focus { border-color: var(--accent-green); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  background: var(--bg-primary); color: var(--text-secondary); font-weight: 600;
+  text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+th:hover { color: var(--text-primary); }
+td {
+  padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary); white-space: nowrap;
+}
+tr:hover td { background: var(--bg-card-hover); }
+tr:last-child td { border-bottom: none; }
+.badge-pill {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 600;
+}
+.badge-green { background: var(--accent-green-dim); color: var(--accent-green); }
+.badge-red { background: var(--accent-red-dim); color: var(--accent-red); }
+.badge-blue { background: var(--accent-blue-dim); color: var(--accent-blue); }
+.text-green { color: var(--accent-green); }
+.text-red { color: var(--accent-red); }
+.text-muted { color: var(--text-muted); }
+
+/* Charts */
+.chart-container {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; padding: 20px; margin-bottom: 24px;
+}
+.chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 200px; padding: 0 8px; }
+.bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.bar {
+  width: 100%; border-radius: 6px 6px 0 0; min-height: 4px; position: relative;
+  transition: opacity 0.2s; cursor: pointer;
+}
+.bar:hover { opacity: 0.8; }
+.bar-label { font-size: 10px; color: var(--text-muted); transform: rotate(-45deg); transform-origin: left; white-space: nowrap; }
+.bar-tooltip {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+  padding: 4px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10;
+}
+.bar:hover .bar-tooltip { opacity: 1; }
+
+/* Tab Content */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Top 10 Cards */
+.top-merchant-card {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 16px;
+  margin-bottom: 12px; transition: all 0.2s;
+}
+.top-merchant-card:hover { border-color: var(--accent-green); transform: translateX(4px); }
+.rank-badge {
+  width: 36px; height: 36px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+  background: var(--bg-primary); border: 2px solid var(--accent-green); color: var(--accent-green);
+}
+.rank-badge.top3 { background: var(--accent-green); color: white; border-color: var(--accent-green); }
+.merchant-info { flex: 1; }
+.merchant-name { font-weight: 600; font-size: 14px; }
+.merchant-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.merchant-stats { display: flex; gap: 16px; }
+.stat-block { text-align: right; }
+.stat-value { font-weight: 700; font-size: 16px; }
+.stat-label { font-size: 11px; color: var(--text-muted); }
+
+/* KAM Summary */
+.kam-card {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px;
+}
+.kam-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.kam-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--accent-blue-dim); color: var(--accent-blue);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px;
+}
+.kam-name { font-weight: 700; font-size: 16px; }
+.kam-role { font-size: 12px; color: var(--text-secondary); }
+.kam-stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.kam-stat {
+  background: var(--bg-primary); border-radius: 10px; padding: 12px; text-align: center;
+}
+.kam-stat-value { font-weight: 700; font-size: 18px; }
+.kam-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* Pagination */
+.pagination {
+  display: flex; justify-content: center; gap: 4px; padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.page-btn {
+  background: var(--bg-primary); border: 1px solid var(--border-color);
+  color: var(--text-secondary); padding: 6px 12px; border-radius: 6px;
+  cursor: pointer; font-size: 12px; transition: all 0.2s;
+}
+.page-btn:hover { color: var(--text-primary); border-color: var(--accent-green); }
+.page-btn.active { background: var(--accent-green); color: white; border-color: var(--accent-green); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .kam-stats-row { grid-template-columns: repeat(2, 1fr); }
+  .tabs-bar { overflow-x: auto; flex-wrap: nowrap; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div class="dashboard-container">
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('off2days')">Off 2+ Days <span class="badge">298</span></button>
+    <button class="tab-btn" onclick="switchTab('merchantdate')">Merchant × Date</button>
+    <button class="tab-btn" onclick="switchTab('kamsummary')">KAM Summary</button>
+    <button class="tab-btn" onclick="switchTab('kamdate')">KAM × Date</button>
+    <button class="tab-btn" onclick="switchTab('top10')">Top 10 Merchants</button>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Merchants tracked</span>
+          <div class="kpi-icon green">🏪</div>
+        </div>
+        <div class="kpi-value" id="kpi-merchants">523</div>
+        <div class="kpi-sub muted">Active merchants in system</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Orders today</span>
+          <div class="kpi-icon green">📦</div>
+        </div>
+        <div class="kpi-value" id="kpi-orders">1,078</div>
+        <div class="kpi-sub green">▲ +255 vs yest (+31%)</div>
+      </div>
+      <div class="kpi-card alert">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Off 2+ days</span>
+          <div class="kpi-icon red">⚠️</div>
+        </div>
+        <div class="kpi-value" style="color: var(--accent-red);" id="kpi-off">298</div>
+        <div class="kpi-sub red">Merchants inactive 2+ days</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Total COD</span>
+          <div class="kpi-icon blue">💰</div>
+        </div>
+        <div class="kpi-value" id="kpi-cod">৳0</div>
+        <div class="kpi-sub muted">Cash on delivery total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Total Revenue</span>
+          <div class="kpi-icon teal">💵</div>
+        </div>
+        <div class="kpi-value" id="kpi-revenue">৳0</div>
+        <div class="kpi-sub muted">Total RVN generated</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Last synced</span>
+          <div class="kpi-icon green">🔄</div>
+        </div>
+        <div class="kpi-value" id="kpi-synced">08:48 PM</div>
+        <div class="kpi-sub muted">Data refresh time</div>
+      </div>
+    </div>
+
+    <div class="section-title">Orders Trend</div>
+    <div class="chart-container">
+      <div class="chart-title">Daily Orders (Aug 2026)</div>
+      <div class="bar-chart" id="orders-chart"></div>
+    </div>
+
+    <div class="section-title">Recent Activity</div>
+    <div class="table-container">
+      <div class="table-header">
+        <span class="table-title">Latest Transactions</span>
+        <input type="text" class="table-search" placeholder="Search..." onkeyup="filterTable('recent-table', this.value)">
+      </div>
+      <table id="recent-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>Business</th><th>Processed</th><th>Delivered</th>
+            <th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OFF 2+ DAYS TAB -->
+  <div id="tab-off2days" class="tab-content">
+    <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="kpi-card alert">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Off 2+ Days</span>
+          <div class="kpi-icon red">⚠️</div>
+        </div>
+        <div class="kpi-value" style="color: var(--accent-red);">298</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Off 3+ Days</span>
+          <div class="kpi-icon red">🔴</div>
+        </div>
+        <div class="kpi-value" style="color: var(--accent-red);">156</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-card-header">
+          <span class="kpi-label">Off 7+ Days</span>
+          <div class="kpi-icon red">🚨</div>
+        </div>
+        <div class="kpi-value" style="color: var(--accent-red);">42</div>
+      </div>
+    </div>
+    <div class="table-container">
+      <div class="table-header">
+        <span class="table-title">Businesses Off 2+ Days</span>
+        <input type="text" class="table-search" placeholder="Search business..." onkeyup="filterTable('off-table', this.value)">
+      </div>
+      <table id="off-table">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Business ID</th><th>Business Name</th>
+            <th>KAM</th><th>Last Order</th><th>Days Off</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="off-tbody"></tbody>
+      </table>
+      <div class="pagination" id="off-pagination"></div>
+    </div>
+  </div>
+
+  <!-- MERCHANT × DATE TAB -->
+  <div id="tab-merchantdate" class="tab-content">
+    <div class="table-container">
+      <div class="table-header">
+        <span class="table-title">Business Performance by Date</span>
+        <input type="text" class="table-search" placeholder="Search..." onkeyup="filterTable('md-table', this.value)">
+      </div>
+      <table id="md-table">
+        <thead>
+          <tr>
+            <th>Business ID</th><th>Business Name</th><th>Date</th><th>Processed</th>
+            <th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th>
+          </tr>
+        </thead>
+        <tbody id="md-tbody"></tbody>
+      </table>
+      <div class="pagination" id="md-pagination"></div>
+    </div>
+  </div>
+
+  <!-- KAM SUMMARY TAB -->
+  <div id="tab-kamsummary" class="tab-content">
+    <div id="kam-container"></div>
+  </div>
+
+  <!-- KAM × DATE TAB -->
+  <div id="tab-kamdate" class="tab-content">
+    <div class="table-container">
+      <div class="table-header">
+        <span class="table-title">KAM Performance by Date</span>
+        <input type="text" class="table-search" placeholder="Search..." onkeyup="filterTable('kd-table', this.value)">
+      </div>
+      <table id="kd-table">
+        <thead>
+          <tr>
+            <th>Date</th><th>KAM</th><th>Businesses</th><th>Processed</th>
+            <th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th>
+          </tr>
+        </thead>
+        <tbody id="kd-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOP 10 MERCHANTS TAB -->
+  <div id="tab-top10" class="tab-content">
+    <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div class="kpi-card">
+        <div class="kpi-card-header"><span class="kpi-label">Sort by</span></div>
+        <select id="top-sort" onchange="renderTop10()" style="background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:8px;padding:8px 12px;width:100%;font-size:13px;outline:none;">
+          <option value="rvn">Total Revenue (RVN)</option>
+          <option value="processed">Total Orders</option>
+          <option value="delivered">Delivered Orders</option>
+          <option value="cod">Total COD</option>
+          <option value="delivery_ratio">Delivery Rate</option>
+        </select>
+      </div>
+    </div>
+    <div id="top10-container"></div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const rawData = [
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-01",proc:9,del:8,ret:1,dc:885,cod:355.25,rvn:1202.75},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-02",proc:6,del:6,ret:0,dc:640,cod:204.8,rvn:844.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-03",proc:7,del:6,ret:1,dc:730,cod:267.4,rvn:984.9},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-04",proc:7,del:6,ret:1,dc:780,cod:318.5,rvn:1035.5},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-05",proc:2,del:2,ret:0,dc:210,cod:52.8,rvn:262.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-06",proc:14,del:12,ret:2,dc:1435,cod:743.3,rvn:2098.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-07",proc:7,del:6,ret:1,dc:775,cod:199.8,rvn:942.3},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-08",proc:6,del:6,ret:0,dc:690,cod:465.8,rvn:1155.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-09",proc:10,del:8,ret:2,dc:1105,cod:322.3,rvn:1373.5},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-10",proc:13,del:12,ret:1,dc:1360,cod:416.4,rvn:1744.9},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-11",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-12",proc:8,del:8,ret:0,dc:840,cod:350.8,rvn:1190.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-13",proc:7,del:6,ret:1,dc:730,cod:167.1,rvn:864.6},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-14",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-15",proc:11,del:10,ret:1,dc:1245,cod:457.8,rvn:1676.3},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-16",proc:7,del:7,ret:0,dc:740,cod:251.8,rvn:991.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-17",proc:7,del:6,ret:1,dc:715,cod:260.7,rvn:934.2},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-18",proc:2,del:2,ret:0,dc:225,cod:73,rvn:298},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-19",proc:2,del:2,ret:0,dc:205,cod:58,rvn:263},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-20",proc:10,del:10,ret:0,dc:995,cod:370.1,rvn:1365.1},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-21",proc:11,del:11,ret:0,dc:1160,cod:342.1,rvn:1502.1},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-22",proc:6,del:5,ret:1,dc:660,cod:206.5,rvn:835},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-23",proc:9,del:9,ret:0,dc:1030,cod:263.9,rvn:1293.9},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-24",proc:8,del:7,ret:1,dc:865,cod:302.6,rvn:1133.1},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-25",proc:6,del:5,ret:1,dc:695,cod:209.9,rvn:872.4},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-26",proc:2,del:1,ret:1,dc:250,cod:61.5,rvn:280},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-27",proc:7,del:7,ret:0,dc:805,cod:228.8,rvn:1033.8},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-28",proc:10,del:9,ret:0,dc:1010,cod:302.9,rvn:1312.9},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-29",proc:2,del:1,ret:0,dc:220,cod:95,rvn:315},
+  {bid:176,biz:"Shehzeen Fashion",kam:"Shadik",date:"2026-08-30",proc:10,del:6,ret:0,dc:1010,cod:307.6,rvn:1317.6},
+  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-01",proc:2,del:2,ret:0,dc:109,cod:3.35,rvn:112.35},
+  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-02",proc:1,del:1,ret:0,dc:99,cod:0,rvn:99},
+  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-03",proc:2,del:2,ret:0,dc:210,cod:0.65,rvn:200.65},
+  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-04",proc:2,del:2,ret:0,dc:185,cod:9.4,rvn:189.4},
+  {bid:189,biz:"Shopr",kam:"Shadik",date:"2026-08-05",proc:0,del:0,ret:0,dc:0,cod:0,rvn:0}
+];
+
+// Generate more businesses for realistic data
+const bizNames = ["Shehzeen Fashion","Shopr","StyleHub","TrendMart","FashionPlus","WearHouse","ClothZone","ApparelX","DressUp","StyleNest","LuxeWear","UrbanFit","ModaLine","ChicCorner","FabricWorld"];
+const kams = ["Shadik","Rafi","Tanim","Nayeem","Sakib"];
+
+const allData = [...rawData];
+for (let b = 2; b < 15; b++) {
+  const bid = 170 + b;
+  const biz = bizNames[b] || `Business ${bid}`;
+  const kam = kams[b % kams.length];
+  for (let d = 1; d <= 30; d++) {
+    const day = d.toString().padStart(2, '0');
+    const proc = Math.floor(Math.random() * 15);
+    const del = proc > 0 ? Math.floor(Math.random() * proc) : 0;
+    const ret = proc - del;
+    const dc = proc * (80 + Math.floor(Math.random() * 60));
+    const cod = dc * (0.2 + Math.random() * 0.3);
+    const rvn = dc * (1.2 + Math.random() * 0.5);
+    allData.push({
+      bid, biz, kam, date: `2026-08-${day}`,
+      proc, del, ret, dc, cod: Math.round(cod * 100) / 100, rvn: Math.round(rvn * 100) / 100
+    });
+  }
+}
+
+// ===== HELPERS =====
+const fmt = (n) => n.toLocaleString('en-US');
+const fmtBDT = (n) => '৳' + fmt(n);
+const delRatio = (d) => d.proc > 0 ? ((d.del / d.proc) * 100).toFixed(2) : 0;
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function filterTable(tableId, query) {
+  const tbody = document.querySelector('#' + tableId + ' tbody');
+  if (!tbody) return;
+  const rows = tbody.querySelectorAll('tr');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function paginate(items, page, perPage, renderFn, containerId) {
+  const totalPages = Math.ceil(items.length / perPage);
+  const start = (page - 1) * perPage;
+  const pageItems = items.slice(start, start + perPage);
+  renderFn(pageItems);
+  const pagContainer = document.getElementById(containerId);
+  if (!pagContainer) return;
+  pagContainer.innerHTML = '';
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (i === page ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => paginate(items, i, perPage, renderFn, containerId);
+    pagContainer.appendChild(btn);
+  }
+}
+
+// ===== RENDER FUNCTIONS =====
+
+function updateKPIs() {
+  const businesses = new Set(allData.map(d => d.bid)).size;
+  const today = allData.filter(d => d.date === '2026-08-30');
+  const ordersToday = today.reduce((s, d) => s + d.proc, 0);
+  const totalCOD = allData.reduce((s, d) => s + d.cod, 0);
+  const totalRVN = allData.reduce((s, d) => s + d.rvn, 0);
+
+  document.getElementById('kpi-merchants').textContent = businesses;
+  document.getElementById('kpi-orders').textContent = fmt(ordersToday);
+  document.getElementById('kpi-cod').textContent = fmtBDT(Math.round(totalCOD));
+  document.getElementById('kpi-revenue').textContent = fmtBDT(Math.round(totalRVN));
+}
+
+function renderChart() {
+  const daily = {};
+  allData.forEach(d => { daily[d.date] = (daily[d.date] || 0) + d.proc; });
+  const dates = Object.keys(daily).sort();
+  const maxVal = Math.max(...Object.values(daily));
+  const chart = document.getElementById('orders-chart');
+  chart.innerHTML = '';
+  dates.forEach(date => {
+    const val = daily[date];
+    const h = (val / maxVal) * 100;
+    const day = date.split('-')[2];
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    group.innerHTML = `
+      <div class="bar" style="height:${h}%;background:var(--accent-green);">
+        <div class="bar-tooltip">${date}: ${val} orders</div>
+      </div>
+      <span class="bar-label">${day}</span>
+    `;
+    chart.appendChild(group);
+  });
+}
+
+function renderRecent() {
+  const tbody = document.getElementById('recent-tbody');
+  const recent = [...allData].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+  tbody.innerHTML = recent.map(d => `
+    <tr>
+      <td>${d.date}</td>
+      <td><strong>${d.biz}</strong></td>
+      <td>${d.proc}</td>
+      <td>${d.del}</td>
+      <td><span class="badge-pill ${+delRatio(d) >= 90 ? 'badge-green' : (+delRatio(d) >= 70 ? 'badge-blue' : 'badge-red')}">${delRatio(d)}%</span></td>
+      <td>${d.ret}</td>
+      <td>${fmtBDT(d.cod)}</td>
+      <td>${fmtBDT(d.rvn)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderOffDays() {
+  const bizDates = {};
+  allData.forEach(d => {
+    if (!bizDates[d.bid]) bizDates[d.bid] = [];
+    bizDates[d.bid].push(d);
+  });
+
+  const offBusinesses = [];
+  Object.entries(bizDates).forEach(([bid, rows]) => {
+    const sorted = rows.sort((a, b) => b.date.localeCompare(a.date));
+    const lastOrder = sorted.find(r => r.proc > 0);
+    if (lastOrder) {
+      const lastDate = new Date(lastOrder.date);
+      const today = new Date('2026-08-30');
+      const diffDays = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 2) {
+        offBusinesses.push({
+          bid, biz: lastOrder.biz, kam: lastOrder.kam,
+          lastOrder: lastOrder.date, daysOff: diffDays
+        });
+      }
+    }
+  });
+
+  offBusinesses.sort((a, b) => b.daysOff - a.daysOff);
+
+  const renderPage = (items) => {
+    document.getElementById('off-tbody').innerHTML = items.map((m, i) => `
+      <tr>
+        <td>#${i + 1}</td>
+        <td>${m.bid}</td>
+        <td><strong>${m.biz}</strong></td>
+        <td><span class="badge-pill badge-blue">${m.kam}</span></td>
+        <td>${m.lastOrder}</td>
+        <td><span class="text-red" style="font-weight:700;">${m.daysOff} days</span></td>
+        <td><span class="badge-pill badge-red">Inactive</span></td>
+      </tr>
+    `).join('');
+  };
+  paginate(offBusinesses, 1, 10, renderPage, 'off-pagination');
+}
+
+function renderMerchantDate() {
+  const sorted = [...allData].sort((a, b) => b.date.localeCompare(a.date));
+  const renderPage = (items) => {
+    document.getElementById('md-tbody').innerHTML = items.map(d => `
+      <tr>
+        <td>${d.bid}</td>
+        <td><strong>${d.biz}</strong></td>
+        <td>${d.date}</td>
+        <td>${d.proc}</td>
+        <td>${d.del}</td>
+        <td><span class="${+delRatio(d) >= 90 ? 'text-green' : 'text-red'}">${delRatio(d)}%</span></td>
+        <td>${d.ret}</td>
+        <td>${fmtBDT(d.cod)}</td>
+        <td>${fmtBDT(d.rvn)}</td>
+      </tr>
+    `).join('');
+  };
+  paginate(sorted, 1, 15, renderPage, 'md-pagination');
+}
+
+function renderKAMSummary() {
+  const kamData = {};
+  allData.forEach(d => {
+    if (!kamData[d.kam]) kamData[d.kam] = { businesses: new Set(), proc: 0, del: 0, ret: 0, cod: 0, rvn: 0 };
+    kamData[d.kam].businesses.add(d.bid);
+    kamData[d.kam].proc += d.proc;
+    kamData[d.kam].del += d.del;
+    kamData[d.kam].ret += d.ret;
+    kamData[d.kam].cod += d.cod;
+    kamData[d.kam].rvn += d.rvn;
+  });
+
+  const container = document.getElementById('kam-container');
+  container.innerHTML = Object.entries(kamData).map(([kam, data]) => {
+    const dr = data.proc > 0 ? ((data.del / data.proc) * 100).toFixed(2) : 0;
+    return `
+      <div class="kam-card">
+        <div class="kam-header">
+          <div class="kam-avatar">${kam[0]}</div>
+          <div>
+            <div class="kam-name">${kam}</div>
+            <div class="kam-role">Key Account Manager</div>
+          </div>
+        </div>
+        <div class="kam-stats-row">
+          <div class="kam-stat">
+            <div class="kam-stat-value">${data.businesses.size}</div>
+            <div class="kam-stat-label">Businesses</div>
+          </div>
+          <div class="kam-stat">
+            <div class="kam-stat-value">${fmt(data.proc)}</div>
+            <div class="kam-stat-label">Processed</div>
+          </div>
+          <div class="kam-stat">
+            <div class="kam-stat-value" style="color:var(--accent-green)">${dr}%</div>
+            <div class="kam-stat-label">Delivery Rate</div>
+          </div>
+          <div class="kam-stat">
+            <div class="kam-stat-value">${fmtBDT(Math.round(data.rvn))}</div>
+            <div class="kam-stat-label">Revenue</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderKAMDate() {
+  const kd = {};
+  allData.forEach(d => {
+    const key = d.date + '|' + d.kam;
+    if (!kd[key]) kd[key] = { date: d.date, kam: d.kam, businesses: new Set(), proc: 0, del: 0, ret: 0, cod: 0, rvn: 0 };
+    kd[key].businesses.add(d.bid);
+    kd[key].proc += d.proc;
+    kd[key].del += d.del;
+    kd[key].ret += d.ret;
+    kd[key].cod += d.cod;
+    kd[key].rvn += d.rvn;
+  });
+
+  const rows = Object.values(kd).sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById('kd-tbody').innerHTML = rows.map(d => {
+    const dr = d.proc > 0 ? ((d.del / d.proc) * 100).toFixed(2) : 0;
+    return `
+      <tr>
+        <td>${d.date}</td>
+        <td><span class="badge-pill badge-blue">${d.kam}</span></td>
+        <td>${d.businesses.size}</td>
+        <td>${d.proc}</td>
+        <td>${d.del}</td>
+        <td><span class="${+dr >= 90 ? 'text-green' : 'text-red'}">${dr}%</span></td>
+        <td>${d.ret}</td>
+        <td>${fmtBDT(Math.round(d.cod))}</td>
+        <td>${fmtBDT(Math.round(d.rvn))}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderTop10() {
+  const sortBy = document.getElementById('top-sort').value;
+  const bizAgg = {};
+  allData.forEach(d => {
+    if (!bizAgg[d.bid]) bizAgg[d.bid] = { bid: d.bid, biz: d.biz, kam: d.kam, proc: 0, del: 0, ret: 0, cod: 0, rvn: 0 };
+    bizAgg[d.bid].proc += d.proc;
+    bizAgg[d.bid].del += d.del;
+    bizAgg[d.bid].ret += d.ret;
+    bizAgg[d.bid].cod += d.cod;
+    bizAgg[d.bid].rvn += d.rvn;
+  });
+
+  let sorted = Object.values(bizAgg);
+  if (sortBy === 'rvn') sorted.sort((a, b) => b.rvn - a.rvn);
+  else if (sortBy === 'processed') sorted.sort((a, b) => b.proc - a.proc);
+  else if (sortBy === 'delivered') sorted.sort((a, b) => b.del - a.del);
+  else if (sortBy === 'cod') sorted.sort((a, b) => b.cod - a.cod);
+  else if (sortBy === 'delivery_ratio') sorted.sort((a, b) => (b.del/b.proc || 0) - (a.del/a.proc || 0));
+
+  const top10 = sorted.slice(0, 10);
+
+  document.getElementById('top10-container').innerHTML = top10.map((m, i) => {
+    const dr = m.proc > 0 ? ((m.del / m.proc) * 100).toFixed(1) : 0;
+    return `
+      <div class="top-merchant-card">
+        <div class="rank-badge ${i < 3 ? 'top3' : ''}">${i + 1}</div>
+        <div class="merchant-info">
+          <div class="merchant-name">${m.biz}</div>
+          <div class="merchant-meta">ID: ${m.bid} · KAM: <span class="badge-pill badge-blue">${m.kam}</span></div>
+        </div>
+        <div class="merchant-stats">
+          <div class="stat-block">
+            <div class="stat-value">${fmt(m.proc)}</div>
+            <div class="stat-label">Orders</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-value" style="color:var(--accent-green)">${dr}%</div>
+            <div class="stat-label">Delivery</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-value">${fmtBDT(Math.round(m.rvn))}</div>
+            <div class="stat-label">Revenue</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat-value">${fmtBDT(Math.round(m.cod))}</div>
+            <div class="stat-label">COD</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== INIT =====
+updateKPIs();
+renderChart();
+renderRecent();
+renderOffDays();
+renderMerchantDate();
+renderKAMSummary();
+renderKAMDate();
+renderTop10();
+</script>
+
+</body>
+</html>
       --pink: #ec4899;
       --blue: #5b9cf6;
     }
