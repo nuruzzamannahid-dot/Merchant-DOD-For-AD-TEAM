@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BEEACON — DOD Order Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  // Applied before first paint so returning dark-mode users don't see a
+  // flash of light mode. Light is the default for everyone else.
+  (function(){
+    var theme = 'light';
+    try {
+      var saved = localStorage.getItem('merchantPulse:theme');
+      if (saved === 'dark') theme = 'dark';
+    } catch (e) { /* storage unavailable — fall back to default light */ }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+  /* =========================================================
+     Design tokens — Modern SaaS. Light default, dark via
+     [data-theme="dark"].
+     ========================================================= */
+  :root{
+    --bg:#F6F8FA;
+    --surface:#FFFFFF;
+    --surface-2:#F5F7F9;
+    --surface-3:#EFF2F5;
+    --line:#E5E9EF;
+    --line-strong:#D6DBE3;
+    --text:#12161D;
+    --text-2:#4B5665;
+    --text-3:#7A8494;
+    --text-4:#98A2B1;
+    --accent:#0EA37A;
+    --accent-strong:#0B8A66;
+    --accent-dim:#D9F2E9;
+    --accent-bg:#EAF8F2;
+    --alert:#D92D5B;
+    --alert-strong:#B31F47;
+    --alert-dim:#FBE4EB;
+    --alert-bg:#FCF0F3;
+    --warn:#B9770E;
+    --warn-dim:#FBEED9;
+    --bg-rgb:246,248,250;
+    --shadow-sm:0 1px 2px rgba(16,20,26,0.05), 0 1px 1px rgba(16,20,26,0.03);
+    --shadow-md:0 1px 2px rgba(16,20,26,0.04), 0 4px 16px rgba(16,20,26,0.06);
+    --shadow-lg:0 6px 24px rgba(16,20,26,0.10), 0 2px 8px rgba(16,20,26,0.06);
+    --focus-ring:0 0 0 3px rgba(14,163,122,0.22);
+    --radius-sm:7px;
+    --radius:10px;
+    --radius-lg:14px;
+    --row-hover:rgba(15,23,32,0.035);
+    --font-display:'Space Grotesk', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --font-body:'Inter', sans-serif;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  [data-theme="dark"]{
+    --bg:#0B0E15;
+    --surface:#141923;
+    --surface-2:#1A202C;
+    --surface-3:#202735;
+    --line:#222A38;
+    --line-strong:#2C3545;
+    --text:#E9EDF3;
+    --text-2:#97A1B2;
+    --text-3:#6C7686;
+    --text-4:#4E5766;
+    --accent:#33D6A6;
+    --accent-strong:#4AE0B5;
+    --accent-dim:#1B4F42;
+    --accent-bg:#10261F;
+    --alert:#FF5C7A;
+    --alert-strong:#FF7B93;
+    --alert-dim:#43212D;
+    --alert-bg:#2A1820;
+    --warn:#F2B84B;
+    --warn-dim:#3A2C14;
+    --bg-rgb:11,14,21;
+    --row-hover:rgba(255,255,255,0.02);
+    --focus-ring:0 0 0 3px rgba(51,214,166,0.25);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;
+    font-size:14px;line-height:1.45;transition:background-color .15s ease, color .15s ease;}
+  ::selection{background:var(--accent-dim);color:var(--text);}
+  :focus{outline:none;}
+  :focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:6px;}
+
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 24px 80px;}
+  .skip-link{position:absolute;left:-9999px;top:0;background:var(--surface);color:var(--accent);
+    padding:8px 14px;border-radius:0 0 8px 0;z-index:200;font-weight:600;font-size:13px;}
+  .skip-link:focus{left:0;box-shadow:var(--focus-ring);}
+
+  /* ---- Header / sticky toolbar ---- */
+  header.top{position:sticky;top:0;z-index:90;background:rgba(var(--bg-rgb),0.82);backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;gap:20px;
+    flex-wrap:wrap;padding:16px 0;margin:0 -8px 10px;padding-left:8px;padding-right:8px;border-bottom:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:40px;height:40px;border-radius:11px;background:linear-gradient(155deg,var(--accent),var(--accent-strong));
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;box-shadow:var(--shadow-sm);}
+  .brand-mark::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--bg);position:absolute;}
+  .brand-mark::before{content:"";width:16px;height:16px;border-radius:50%;border:2px solid rgba(var(--bg-rgb),0.55);position:absolute;animation:sonar 2.4s ease-out infinite;}
+  @keyframes sonar{0%{transform:scale(0.5);opacity:.9;}100%{transform:scale(1.6);opacity:0;}}
+  .brand h1{font-family:var(--font-display);font-size:19px;font-weight:700;margin:0;letter-spacing:-0.01em;line-height:1.1;}
+  .brand p{margin:2px 0 0;font-size:12px;color:var(--text-3);}
+
+  .top-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .field{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+    border-radius:20px;padding:0 6px 0 13px;height:38px;box-shadow:var(--shadow-sm);transition:border-color .15s, box-shadow .15s;}
+  .field:focus-within{border-color:var(--accent);box-shadow:var(--focus-ring);}
+  .field svg{width:15px;height:15px;color:var(--text-4);flex-shrink:0;margin-top:1px;}
+  .field input{border:none;background:transparent;color:var(--text);font-family:var(--font-body);font-size:13px;
+    outline:none;width:170px;height:100%;}
+  .field input::placeholder{color:var(--text-4);}
+  .field input:focus{box-shadow:none;}
+  select.pill-input{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    font-family:var(--font-body);font-size:13px;padding:8px 30px 8px 13px;height:38px;border-radius:20px;outline:none;
+    box-shadow:var(--shadow-sm);cursor:pointer;appearance:none;-webkit-appearance:none;transition:border-color .15s;}
+  select.pill-input:focus{border-color:var(--accent);box-shadow:var(--focus-ring);}
+  select.pill-input:hover{border-color:var(--line-strong);}
+  select.pill-input{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%236B7686'/></svg>");
+    background-repeat:no-repeat;background-position:right 13px center;}
+
+  button.refresh{background:var(--surface);border:1px solid var(--line);color:var(--text-2);
+    font-family:var(--font-body);font-size:13px;padding:0 14px;height:38px;border-radius:20px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-sm);transition:color .15s, border-color .15s, transform .05s;}
+  button.refresh:hover{color:var(--text);border-color:var(--accent);}
+  button.refresh:active{transform:translateY(1px);}
+  button.refresh .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  button.refresh.loading .dot{animation:pulse-dot 0.9s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:.2;}50%{opacity:1;}}
+  button.refresh .auto{font-family:var(--font-mono);font-size:11px;color:var(--text-4);border-left:1px solid var(--line);
+    padding-left:8px;}
+
+  .theme-toggle{width:38px;height:38px;flex-shrink:0;border-radius:50%;background:var(--surface);
+    border:1px solid var(--line);color:var(--text-3);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    padding:0;box-shadow:var(--shadow-sm);transition:color .15s, border-color .15s;}
+  .theme-toggle:hover{color:var(--text);border-color:var(--accent);}
+  .theme-toggle svg{width:16px;height:16px;}
+  .theme-toggle .icon-moon{display:none;}
+  [data-theme="dark"] .theme-toggle .icon-sun{display:none;}
+  [data-theme="dark"] .theme-toggle .icon-moon{display:block;}
+
+  /* ---- Status banners ---- */
+  .banner{display:none;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius);margin-bottom:16px;
+    font-size:13.5px;box-shadow:var(--shadow-sm);}
+  .banner.show{display:flex;}
+  .banner .b-msg{flex:1;}
+  .banner.error{background:var(--alert-bg);border:1px solid var(--alert-dim);color:var(--alert-strong);}
+  .banner.error strong{color:var(--alert-strong);}
+  .banner.stale{background:var(--warn-dim);border:1px solid rgba(185,119,14,.3);color:#8a5c0a;}
+  [data-theme="dark"] .banner.stale{color:#f4c877;}
+  .banner .b-action{flex-shrink:0;}
+  button.b-btn{font-family:var(--font-body);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;}
+  button.b-btn.retry{background:var(--alert-strong);border:1px solid var(--alert-strong);color:#fff;}
+  button.b-btn.retry:hover{background:var(--alert);}
+  button.b-btn.dismiss{background:transparent;border:1px solid var(--line-strong);color:var(--text-3);}
+  button.b-btn.dismiss:hover{color:var(--text);}
+
+  /* ---- Stat strip ---- */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;
+    box-shadow:var(--shadow-sm);transition:box-shadow .15s, transform .15s, border-color .15s;}
+  .stat:hover{box-shadow:var(--shadow-md);border-color:var(--line-strong);}
+  .stat .stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .stat .stat-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    background:var(--accent-bg);color:var(--accent);}
+  .stat .stat-icon svg{width:15px;height:15px;}
+  .stat .lbl{font-size:12px;color:var(--text-3);font-weight:500;}
+  .stat .num{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;letter-spacing:-0.02em;}
+  .stat .num small{font-size:15px;color:var(--text-3);font-weight:600;margin-left:2px;}
+  .stat .trend{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11.5px;margin-top:9px;padding:3px 8px;border-radius:20px;}
+  .stat .trend.up{color:var(--accent-strong);background:var(--accent-bg);}
+  .stat .trend.down{color:var(--alert-strong);background:var(--alert-bg);}
+  .stat .trend.flat{color:var(--text-3);background:var(--surface-3);}
+  .stat.alertstat{border-color:var(--alert-dim);}
+  .stat.alertstat .num{color:var(--alert);}
+  .stat.alertstat .stat-icon{background:var(--alert-bg);color:var(--alert);}
+
+  /* ---- Skeleton ---- */
+  .skel{border-radius:8px;background:linear-gradient(90deg,var(--surface-3) 25%,var(--surface-2) 50%,var(--surface-3) 75%);
+    background-size:200% 100%;animation:shimmer 1.4s infinite;}
+  @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .skel.num{width:70px;height:26px;margin-top:4px;}
+  .skel.line{width:90px;height:12px;}
+
+  /* ---- Alert rail ---- */
+  .alertbox{border:1px solid var(--alert-dim);background:linear-gradient(180deg, rgba(217,45,91,0.06), rgba(217,45,91,0.01));
+    border-radius:var(--radius-lg);padding:14px 16px 8px;margin-bottom:22px;box-shadow:var(--shadow-sm);}
+  [data-theme="dark"] .alertbox{background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));}
+  .alertbox.empty{border-color:var(--line);background:var(--surface);}
+  .alertbox h3{font-family:var(--font-display);font-size:13px;margin:0 0 10px;display:flex;align-items:center;gap:8px;
+    color:var(--alert);text-transform:uppercase;letter-spacing:.05em;}
+  .alertbox.empty h3{color:var(--text-3);}
+  .alert-ring{width:8px;height:8px;border-radius:50%;border:2px solid var(--alert);position:relative;flex-shrink:0;}
+  .alert-ring::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--alert);animation:sonar 1.6s ease-out infinite;}
+  .alert-chips{display:flex;flex-wrap:wrap;gap:9px;padding-bottom:12px;}
+  .chip{font-family:var(--font-body);font-size:12.5px;background:var(--surface);color:var(--text);
+    padding:7px 11px;border-radius:9px;border:1px solid var(--alert-dim);display:flex;align-items:center;gap:7px;
+    box-shadow:var(--shadow-sm);}
+  .chip .chip-dot{width:7px;height:7px;border-radius:50%;background:var(--alert);flex-shrink:0;}
+  .chip b{color:var(--text);font-weight:600;}
+  .chip span{color:var(--text-3);font-size:12px;}
+  .chip .chip-meta{color:var(--text-4);font-family:var(--font-mono);font-size:11px;}
+
+  /* ---- KAM section ---- */
+  .kam-section{margin-bottom:18px;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden;
+    background:var(--surface);box-shadow:var(--shadow-sm);}
+  .kam-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;
+    background:var(--surface-2);transition:background .12s;}
+  .kam-head:hover{background:var(--surface-3);}
+  .kam-head .left{display:flex;align-items:center;gap:11px;}
+  .kam-head .caret{font-size:10px;color:var(--text-4);transition:transform .15s var(--ease);width:8px;}
+  .kam-section.collapsed .caret{transform:rotate(-90deg);}
+  .kam-head .name{font-family:var(--font-display);font-weight:600;font-size:14.5px;}
+  .kam-head .count{font-family:var(--font-mono);font-size:11.5px;color:var(--text-3);background:var(--surface);
+    border:1px solid var(--line);padding:2px 9px;border-radius:20px;}
+  .kam-head .kam-alert{font-family:var(--font-mono);font-size:11.5px;color:var(--alert);background:var(--alert-bg);
+    border:1px solid var(--alert-dim);padding:2px 9px;border-radius:20px;}
+
+  table.merchants{width:100%;border-collapse:collapse;}
+  .kam-section.collapsed table.merchants{display:none;}
+  table.merchants thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);
+    font-weight:600;padding:11px 18px 9px;border-bottom:1px solid var(--line);}
+  table.merchants tbody td{padding:12px 18px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;}
+  table.merchants tbody tr:last-child td{border-bottom:none;}
+  table.merchants tbody tr{transition:background .12s;}
+  table.merchants tbody tr:hover{background:var(--row-hover);}
+  table.merchants tbody tr.flagged{background:var(--alert-bg);}
+  table.merchants tbody tr.flagged:hover{background:var(--alert-bg);}
+  .mname{font-weight:500;display:flex;align-items:center;gap:8px;}
+  .mname .flag-pip{width:7px;height:7px;border-radius:50%;background:var(--alert);flex-shrink:0;box-shadow:0 0 0 3px var(--alert-dim);}
+  .mid{font-family:var(--font-mono);color:var(--text-4);font-size:11.5px;margin-top:1px;}
+  .spark-wrap{width:96px;position:relative;}
+  .spark-wrap svg{display:block;width:96px;height:28px;cursor:pointer;}
+  .today-val{font-family:var(--font-mono);font-size:14.5px;font-weight:600;}
+  .today-val.zero{color:var(--text-4);}
+  .delta{font-family:var(--font-mono);font-size:11.5px;margin-left:8px;display:inline-flex;align-items:center;gap:2px;}
+  .delta.up{color:var(--accent-strong);}
+  .delta.down{color:var(--alert);}
+  .delta.flat{color:var(--text-4);}
+
+  .badge{font-family:var(--font-mono);font-size:10.5px;padding:3px 9px;border-radius:6px;white-space:nowrap;}
+  .badge.off{background:var(--alert-dim);color:var(--alert-strong);border:1px solid var(--alert-dim);}
+
+  /* ---- Legend ---- */
+  .legend{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);margin:0 0 14px;}
+  .legend .lg-item{display:inline-flex;align-items:center;gap:6px;}
+  .legend .lg-swatch{width:14px;height:3px;border-radius:2px;background:var(--accent);display:inline-block;}
+  .legend .lg-swatch.zero{width:8px;height:8px;border-radius:2px;background:var(--alert-dim);border:1px solid var(--alert);}
+
+  .empty-state{text-align:center;padding:64px 20px;color:var(--text-3);}
+  .empty-state .big{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px;font-weight:600;}
+  .empty-state code{background:var(--surface-2);border:1px solid var(--line);padding:2px 7px;border-radius:6px;
+    font-family:var(--font-mono);font-size:12px;}
+
+  footer{text-align:center;color:var(--text-4);font-size:11.5px;margin-top:40px;font-family:var(--font-mono);}
+
+  /* ---- Tabs ---- */
+  .tabnav{display:flex;gap:2px;margin:0 0 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;position:sticky;
+    top:76px;z-index:80;background:var(--bg);padding-top:2px;}
+  .tabbtn{background:none;border:none;color:var(--text-3);font-family:var(--font-display);font-weight:600;
+    font-size:13.5px;padding:11px 4px;margin-right:22px;cursor:pointer;position:relative;top:1px;
+    border-bottom:2px solid transparent;transition:color .15s;}
+  .tabbtn:hover{color:var(--text);}
+  .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tabbtn:focus-visible{border-radius:6px;box-shadow:var(--focus-ring);}
+  .tabcount{font-family:var(--font-mono);font-size:10.5px;color:#fff;background:var(--alert);padding:1px 7px;border-radius:10px;
+    margin-left:6px;vertical-align:2px;box-shadow:0 0 0 2px var(--alert-dim);}
+  .tabcount:empty{display:none;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* ---- Matrix tables ---- */
+  .matrix-wrap{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface);
+    overflow:auto;max-height:72vh;box-shadow:var(--shadow-sm);}
+  table.matrix{border-collapse:collapse;font-size:12.5px;white-space:nowrap;}
+  table.matrix thead th{position:sticky;top:0;background:var(--surface-2);color:var(--text-4);
+    font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:9px 12px;
+    border-bottom:1px solid var(--line);text-align:right;z-index:1;}
+  table.matrix thead th:first-child{position:sticky;left:0;top:0;z-index:2;text-align:left;background:var(--surface-2);}
+  table.matrix thead th[data-col]{cursor:pointer;user-select:none;}
+  table.matrix thead th[data-col]:hover{color:var(--text);background:var(--surface-3);}
+  table.matrix thead th[aria-sort]::after{content:"";display:inline-block;width:0;height:0;margin-left:5px;vertical-align:2px;
+    border-left:4px solid transparent;border-right:4px solid transparent;}
+  table.matrix thead th[aria-sort="ascending"]::after{border-bottom:5px solid var(--accent);}
+  table.matrix thead th[aria-sort="descending"]::after{border-top:5px solid var(--accent);}
+  table.matrix thead th:first-child[data-col]{text-align:left;}
+  table.matrix tbody td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;
+    font-family:var(--font-mono);color:var(--text-3);cursor:default;}
+  table.matrix tbody td:first-child{position:sticky;left:0;background:var(--surface);text-align:left;
+    font-family:var(--font-body);color:var(--text);font-weight:500;border-right:1px solid var(--line);z-index:1;}
+  table.matrix tbody td.zero{color:var(--text-4);opacity:.55;}
+  table.matrix tbody td.hi{color:var(--accent-strong);font-weight:600;}
+  table.matrix tbody td.rowtotal{font-weight:600;color:var(--text);border-left:1px solid var(--line);}
+  table.matrix tbody tr:hover td{background:var(--row-hover);}
+  table.matrix tbody tr:hover td:first-child{background:var(--surface-2);}
+  table.matrix tfoot td{padding:9px 12px;font-family:var(--font-mono);font-weight:600;color:var(--text);
+    border-top:1px solid var(--line);text-align:right;background:var(--surface-2);position:sticky;bottom:0;}
+  table.matrix tfoot td:first-child{position:sticky;left:0;bottom:0;text-align:left;background:var(--surface-2);z-index:2;}
+
+  .matrix-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .matrix-toolbar .hint{font-size:12px;color:var(--text-4);}
+
+  /* ---- KAM summary table ---- */
+  .kam-summary-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+  .kam-summary-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-4);
+    font-weight:600;padding:11px 18px;border-bottom:1px solid var(--line);background:var(--surface-2);}
+  .kam-summary-table thead th.num{text-align:right;}
+  .kam-summary-table tbody td{padding:13px 18px;border-bottom:1px solid var(--line);font-size:13px;}
+  .kam-summary-table tbody td.num{text-align:right;font-family:var(--font-mono);}
+  .kam-summary-table tbody tr:last-child td{border-bottom:none;}
+  .kam-summary-table tbody tr:hover{background:var(--row-hover);}
+  .kam-summary-table .kamname{font-weight:600;font-family:var(--font-display);}
+  .kam-summary-table tfoot td{padding:13px 18px;border-top:1px solid var(--line);font-size:13px;font-weight:600;
+    color:var(--text);background:var(--surface-2);}
+  .kam-summary-table tfoot td.num{text-align:right;font-family:var(--font-mono);}
+  .kam-summary-table tfoot .kamname{font-family:var(--font-display);}
+
+  /* ---- Top 10 merchants (per KAM) ---- */
+  .top10-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:18px;align-items:start;}
+  .top10-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:16px 18px 6px;box-shadow:var(--shadow-sm);overflow-x:auto;}
+  .t10-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .t10-head .left{display:flex;align-items:center;gap:10px;}
+  .t10-head .name{font-family:var(--font-display);font-weight:700;font-size:14.5px;}
+  .t10-head .count{font-size:11px;color:var(--text-4);background:var(--surface-2);padding:3px 9px;border-radius:10px;}
+  .t10-stat{font-size:12px;color:var(--text-3);white-space:nowrap;}
+  .t10-stat .mid{color:var(--text-4);}
+  table.top10-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.top10-table thead th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text-4);padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  table.top10-table thead th.num{text-align:right;}
+  table.top10-table tbody td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.top10-table tbody td.num{text-align:right;font-family:var(--font-mono);}
+  table.top10-table tbody tr:last-child td{border-bottom:none;}
+  table.top10-table tbody tr:hover td{background:var(--row-hover);}
+  table.top10-table tbody tr.flagged td{background:var(--alert-bg);}
+  .t10-rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+    background:var(--surface-3);color:var(--text-3);font-family:var(--font-mono);font-weight:600;font-size:11px;flex-shrink:0;}
+  .t10-rank.gold{background:#F7D774;color:#5C4300;}
+  .t10-rank.silver{background:#D9DEE6;color:#3A4250;}
+  .t10-rank.bronze{background:#E6BFA3;color:#5C3315;}
+  [data-theme="dark"] .t10-rank.gold{background:#8A6D1F;color:#FFE8A8;}
+  [data-theme="dark"] .t10-rank.silver{background:#4A5060;color:#E5E9F0;}
+  [data-theme="dark"] .t10-rank.bronze{background:#6B4326;color:#F3D2B8;}
+  .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
+    color:var(--alert);border:1px solid var(--alert-dim);}
+
+  /* ---- Orders Trend chart ---- */
+  .trend-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:20px 20px 16px;margin-bottom:22px;box-shadow:var(--shadow-sm);}
+  .trend-card h3{margin:0 0 16px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);}
+  .trend-bars{display:flex;align-items:flex-end;gap:4px;height:170px;}
+  .trend-bar-col{flex:1;height:100%;display:flex;align-items:flex-end;min-width:0;}
+  .trend-bar{width:100%;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;transition:opacity .12s;}
+  .trend-bar-col:hover .trend-bar{opacity:.72;}
+  .trend-labels{display:flex;gap:4px;margin-top:6px;}
+  .trend-label{flex:1;min-width:0;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text-3);}
+
+  /* ---- Off Days panel ---- */
+  .off-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;}
+  .off-stat{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:16px 18px;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm);transition:border-color .12s;}
+  .off-stat .lbl{display:block;font-size:12px;color:var(--text-3);margin-bottom:8px;}
+  .off-stat .num{display:block;font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--alert);}
+  .off-stat:hover{border-color:var(--line-strong);}
+  .off-stat.active{border-color:var(--alert);box-shadow:0 0 0 1px var(--alert) inset;}
+  .off-list-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:18px 20px;box-shadow:var(--shadow-sm);}
+  .off-list-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+  .off-list-head h3{margin:0;font-family:var(--font-display);font-size:14px;font-weight:600;}
+  .off-search{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:7px 12px;font-size:13px;color:var(--text);min-width:200px;}
+  .off-search:focus{border-color:var(--accent);box-shadow:var(--focus-ring);}
+  table.off-table{width:100%;border-collapse:collapse;font-size:13px;}
+  table.off-table th{text-align:left;padding:8px 10px;color:var(--text-3);font-weight:600;font-size:11.5px;
+    text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--line);}
+  table.off-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  table.off-table tbody tr:hover{background:var(--row-hover);}
+  .kam-tag{display:inline-block;background:var(--accent-bg);color:var(--accent-strong);border-radius:20px;
+    padding:3px 10px;font-size:11.5px;font-weight:600;}
+  .pagination{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:flex-end;}
+  .pg-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text-2);border-radius:7px;
+    min-width:30px;padding:5px 8px;font-size:12.5px;cursor:pointer;font-family:var(--font-mono);}
+  .pg-btn:hover{border-color:var(--line-strong);}
+  .pg-btn.active{background:var(--accent);border-color:var(--accent);color:#06231A;font-weight:700;}
+
+  /* ---- KAM cards ---- */
+  .kam-cards{display:flex;flex-direction:column;gap:14px;}
+  .kam-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:18px 20px;box-shadow:var(--shadow-sm);}
+  .kam-card-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .kam-avatar{width:38px;height:38px;border-radius:50%;background:var(--accent-bg);color:var(--accent-strong);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:15px;flex-shrink:0;}
+  .kam-card-head .name{display:block;font-family:var(--font-display);font-weight:600;font-size:14.5px;color:var(--text);}
+  .kam-card-head .role{display:block;font-size:12px;color:var(--text-3);}
+  .kam-stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+  .kam-stat-box{background:var(--surface-2);border-radius:var(--radius);padding:12px 14px;text-align:center;}
+  .kam-stat-box .num{display:block;font-family:var(--font-display);font-weight:700;font-size:16px;color:var(--text);}
+  .kam-stat-box .lbl{display:block;font-size:11px;color:var(--text-3);margin-top:4px;}
+  @media (max-width:760px){ .kam-stat-grid{grid-template-columns:repeat(2,1fr);} }
+
+  /* ---- Top Businesses leaderboard ---- */
+  .top-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .topmetric-select{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:8px 12px;font-size:13px;color:var(--text);font-family:inherit;}
+  .top-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .top-row{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-lg);padding:14px 18px;box-shadow:var(--shadow-sm);}
+  .top-rank{width:30px;height:30px;border-radius:50%;background:var(--accent-bg);color:var(--accent-strong);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+  .top-meta{flex:1 1 200px;min-width:140px;}
+  .top-meta .name{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--text);}
+  .top-meta .sub{font-size:12px;color:var(--text-3);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .top-stats{display:flex;gap:26px;flex-wrap:wrap;}
+  .top-stats .tstat{text-align:right;min-width:70px;}
+  .top-stats .tstat .num{display:block;font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--text);}
+  .top-stats .tstat .num.pct{color:var(--accent-strong);}
+  .top-stats .tstat .lbl{display:block;font-size:10.5px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.03em;}
+  @media (max-width:760px){ .top-row{flex-wrap:wrap;} .top-stats{width:100%;justify-content:space-between;} }
+
+  /* ---- Tooltip ---- */
+  .tip{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;
+    box-shadow:var(--shadow-lg);padding:10px 12px;min-width:160px;max-width:240px;pointer-events:none;
+    opacity:0;transform:translateY(4px);transition:opacity .12s var(--ease), transform .12s var(--ease);font-size:12px;}
+  .tip.show{opacity:1;transform:translateY(0);}
+  .tip .tip-title{font-family:var(--font-display);font-weight:600;font-size:12.5px;margin-bottom:7px;padding-bottom:7px;
+    border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .tip .tip-rows{display:flex;flex-direction:column;gap:4px;}
+  .tip .tip-row{display:flex;align-items:center;justify-content:space-between;gap:14px;font-family:var(--font-mono);font-size:11.5px;}
+  .tip .tip-row .r-date{color:var(--text-3);}
+  .tip .tip-row .r-val{font-weight:600;color:var(--text);}
+  .tip .tip-row .r-val.zero{color:var(--alert);}
+  .tip .tip-row .r-val.nd{color:var(--text-4);}
+
+  @media (max-width:960px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:760px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .off-stats{grid-template-columns:1fr;}
+    table.merchants thead{display:none;}
+    table.merchants, table.merchants tbody, table.merchants tr, table.merchants td{display:block;width:100%;}
+    table.merchants tbody tr{padding:12px 18px;border-bottom:1px solid var(--line);}
+    table.merchants tbody td{padding:3px 0;border-bottom:none;}
+    .field input{width:120px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+  <span id="main"></span>
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>BEEACON</h1>
+        <p>Day-over-day order tracking · AD Team</p>
+      </div>
+    </div>
+    <div class="top-controls" aria-label="Dashboard controls">
+      <div class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search merchant or ID…" aria-label="Search merchants" />
+      </div>
+      <select id="kamFilter" class="pill-input" aria-label="Filter by KAM"><option value="">All KAMs</option></select>
+      <button class="refresh" id="refreshBtn" aria-label="Refresh data">
+        <span class="dot"></span><span>Refresh</span><span class="auto" id="autoLabel"></span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" type="button" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner error" id="errorBanner" role="alert">
+    <div class="b-msg"><strong>Couldn't load data.</strong> <span id="errorMsg"></span></div>
+    <div class="b-action"><button class="b-btn retry" id="retryBtn">Retry</button></div>
+  </div>
+
+  <div class="banner stale" id="staleBanner">
+    <div class="b-msg" id="staleMsg"></div>
+    <div class="b-action"><button class="b-btn dismiss" id="staleDismiss">Dismiss</button></div>
+  </div>
+
+  <nav class="tabnav" id="tabNav" role="tablist" aria-label="Views">
+    <button class="tabbtn active" role="tab" aria-selected="true" data-tab="dashboard" id="tab-dashboard">Dashboard</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="flagged" id="tab-flagged">Off 2+ Days <span class="tabcount" id="flaggedTabCount" aria-live="polite"></span></button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="merchantMatrix" id="tab-merchantMatrix">Merchant × Date</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamSummary" id="tab-kamSummary">KAM Summary</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamMatrix" id="tab-kamMatrix">KAM × Date</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="top10" id="tab-top10">Top Businesses</button>
+  </nav>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="big">Not connected yet</div>
+    <div>Paste your Apps Script Web App URL into <code>CONFIG.WEB_APP_URL</code> near the top of this file, then redeploy.</div>
+  </div>
+
+  <!-- ===== Tab: Dashboard ===== -->
+  <div class="tab-panel active" id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard">
+    <section class="stats" aria-label="Summary statistics">
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="store"></span><span class="lbl">Merchants tracked</span></div><div class="num" id="statTotal">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Orders today</span></div><div class="num" id="statToday">–</div><span class="trend" id="statTodayTrend"></span></div>
+      <div class="stat alertstat"><div class="stat-top"><span class="stat-icon" data-icon="alert"></span><span class="lbl">Off 2+ days</span></div><div class="num" id="statAlerts">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total COD</span></div><div class="num" id="statCod">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total Revenue</span></div><div class="num" id="statRevenue">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="sync"></span><span class="lbl">Last synced</span></div><div class="num" id="statSynced">–</div></div>
+    </section>
+
+    <div class="legend" id="legendRow" style="display:none;">
+      <span class="lg-item"><span class="lg-swatch"></span> Orders</span>
+      <span class="lg-item"><span class="lg-swatch zero"></span> Zero / no orders</span>
+    </div>
+
+    <section class="trend-card" id="trendCard">
+      <h3>Orders Trend</h3>
+      <div id="trendChart"></div>
+    </section>
+
+    <section id="kamSections"></section>
+  </div>
+
+  <!-- ===== Tab: Off Days ===== -->
+  <div class="tab-panel" id="panel-flagged" role="tabpanel" aria-labelledby="tab-flagged">
+    <section class="off-stats">
+      <button class="off-stat active" type="button" data-threshold="2"><span class="lbl">Off 2+ Days</span><span class="num" id="offCount2">–</span></button>
+      <button class="off-stat" type="button" data-threshold="3"><span class="lbl">Off 3+ Days</span><span class="num" id="offCount3">–</span></button>
+      <button class="off-stat" type="button" data-threshold="7"><span class="lbl">Off 7+ Days</span><span class="num" id="offCount7">–</span></button>
+    </section>
+    <section class="off-list-card">
+      <div class="off-list-head">
+        <h3 id="offListTitle">Businesses Off 2+ Days</h3>
+        <input type="search" id="offSearch" class="off-search" placeholder="Search…" aria-label="Search businesses">
+      </div>
+      <div class="matrix-wrap"><table class="off-table" id="offTable"></table></div>
+      <div class="pagination" id="offPagination"></div>
+    </section>
+  </div>
+
+  <!-- ===== Tab: Merchant x Date matrix ===== -->
+  <div class="tab-panel" id="panel-merchantMatrix" role="tabpanel" aria-labelledby="tab-merchantMatrix">
+    <div class="matrix-toolbar">
+      <span class="hint">Order count per merchant, per day. Click any column header to sort. Scroll to see the full date range.</span>
+    </div>
+    <div class="matrix-wrap"><table class="matrix" id="merchantMatrixTable"></table></div>
+  </div>
+
+  <!-- ===== Tab: KAM summary ===== -->
+  <div class="tab-panel" id="panel-kamSummary" role="tabpanel" aria-labelledby="tab-kamSummary">
+    <div class="matrix-toolbar">
+      <span class="hint">Totals per KAM across the current date window.</span>
+    </div>
+    <div class="kam-cards" id="kamCards"></div>
+  </div>
+
+  <!-- ===== Tab: KAM x Date matrix ===== -->
+  <div class="tab-panel" id="panel-kamMatrix" role="tabpanel" aria-labelledby="tab-kamMatrix">
+    <div class="matrix-toolbar">
+      <span class="hint">Combined order count of every merchant under each KAM, per day. Click a column header to sort.</span>
+    </div>
+    <div class="matrix-wrap"><table class="matrix" id="kamMatrixTable"></table></div>
+  </div>
+
+  <!-- ===== Tab: Top Businesses ===== -->
+  <div class="tab-panel" id="panel-top10" role="tabpanel" aria-labelledby="tab-top10">
+    <div class="matrix-toolbar top-toolbar">
+      <select id="topMetric" class="topmetric-select" aria-label="Sort by">
+        <option value="revenue">Total Revenue (RVN)</option>
+        <option value="orders">Total Orders</option>
+        <option value="cod">Total COD</option>
+        <option value="deliveryCharge">Total Delivery Charge</option>
+      </select>
+      <span class="hint" id="topHint"></span>
+    </div>
+    <div class="top-list" id="topList"></div>
+  </div>
+
+  <footer id="footNote">BEEACON · reads live from AD TEAM DATA</footer>
+</div>
+
+<div class="tip" id="tipEl" role="tooltip"></div>
+
+<script>
+/* =========================================================
+   CONFIG — data now comes from this server's own /api/data
+   endpoint, which fetches the Apps Script URL server-side
+   (avoids the browser CORS block on Google's redirect).
+   ========================================================= */
+const CONFIG = {
+  WEB_APP_URL: "/api/data",
+  REFRESH_MS: 5 * 60 * 1000,   // auto-refresh every 5 minutes
+  ALERT_DAYS: 2                 // consecutive zero-order days that trigger an alert
+};
+
+const LS = {
+  theme: 'merchantPulse:theme',
+  search: 'merchantPulse:search',
+  kam: 'merchantPulse:kam',
+  collapsed: 'merchantPulse:collapsed',
+  tab: 'merchantPulse:tab',
+  mSort: 'merchantPulse:mSort',
+  kSort: 'merchantPulse:kSort'
+};
+
+let STATE = {
+  dates: [], merchants: [], groups: {}, collapsed: {},
+  loading: false, lastSync: null, hasData: false,
+  merchantSort: { col: 'name', dir: 0 },   // dir: 0=native, 1=asc, 2=desc
+  kamSort: { col: 'name', dir: 0 },
+  offThreshold: 2, offPage: 1,
+  topMetric: 'revenue'
+};
+
+/* ---------------- helpers ---------------- */
+function lsGet(k, fb){
+  try { const v = localStorage.getItem(k); return v === null ? fb : v; } catch(e){ return fb; }
+}
+function lsSet(k, v){
+  try { localStorage.setItem(k, v); } catch(e){ /* ignore */ }
+}
+function lsGetJSON(k, fb){
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; }
+}
+function lsSetJSON(k, v){
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){ /* ignore */ }
+}
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a), ms); }; };
+
+function fmtDate(iso){
+  if(!iso) return "–";
+  const d = new Date(iso + "T00:00:00");
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function fmtDateTime(ts){
+  if(!ts) return "–";
+  return new Date(ts).toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"});
+}
+function fmtNum(n){
+  return n ? n.toLocaleString() : String(n ?? '');
+}
+function fmtMoney(n){
+  n = Number(n) || 0;
+  return '৳' + Math.round(n).toLocaleString();
+}
+
+function isFlagged(orders){
+  orders = safeOrders(orders);
+  const n = orders.length;
+  if (n < CONFIG.ALERT_DAYS) return false;
+  const tail = orders.slice(n - CONFIG.ALERT_DAYS);
+  return tail.every(v => v === 0);
+}
+function flaggedDays(orders){
+  orders = safeOrders(orders);
+  let c = 0;
+  for (let i = orders.length - 1; i >= 0; i--){
+    const v = orders[i];
+    if (v === 0) c++; else break;
+  }
+  return c;
+}
+
+function safeOrders(orders){
+  return Array.isArray(orders) ? orders : [];
+}
+// Sums a metric array (orders/delivered/cod/deliveryCharge/revenue), ignoring null/undefined.
+function sumArr(arr){
+  return safeOrders(arr).reduce((s, v) => s + (Number(v) || 0), 0);
+}
+// Sums a metric field across a list of merchants, e.g. sumField(list, 'revenue').
+function sumField(list, field){
+  return list.reduce((s, m) => s + sumArr(m[field]), 0);
+}
+
+// Align a merchant's order array to the full date window so index i always
+// matches dates[i]. Truncates anything longer and pads short arrays with null
+// ("no data"), which the rest of the UI already treats as missing, not zero.
+function normalizeOrders(orders, len){
+  const arr = safeOrders(orders).slice(0, len);
+  while (arr.length < len) arr.push(null);
+  return arr;
+}
+
+function esc(str){
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function renderTabError(el, err){
+  console.error(err);
+  el.innerHTML = `<div class="empty-state"><div class="big">Couldn't render this tab</div>
+    <div>${esc(err && err.message ? err.message : err)}</div></div>`;
+}
+
+function getFilteredPool(){
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const kamPick = document.getElementById('kamFilter').value;
+  return STATE.merchants.filter(m => {
+    if (kamPick && (m.assignedKam || "(Unassigned)") !== kamPick) return false;
+    if (search){
+      const hay = (m.businessName + " " + m.businessId).toLowerCase();
+      if (hay.indexOf(search) === -1) return false;
+    }
+    return true;
+  });
+}
+
+/* ---------------- icons (inlined) ---------------- */
+const ICONS = {
+  store: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9v11h18V9"/><path d="M3 9h18"/><path d="M9 20v-6h6v6"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+  sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>'
+};
+
+/* ---------------- orders trend (bar chart) ---------------- */
+function renderTrendChart(values, dates){
+  if (!values.length) return '<div class="empty-state"><div class="big">No data yet</div></div>';
+  const max = Math.max(1, ...values.map(v => Number(v) || 0));
+  const bars = values.map((v, i) => {
+    const val = Number(v) || 0;
+    const pct = Math.max(1, (val / max) * 100);
+    const tip = dayTip('Orders', [dates[i]], [val]).replace(/"/g, '&quot;');
+    return `<div class="trend-bar-col" data-tip="${tip}"><div class="trend-bar" style="height:${pct.toFixed(1)}%"></div></div>`;
+  }).join('');
+  const labels = dates.map(d => `<div class="trend-label">${esc(String(d).slice(8,10))}</div>`).join('');
+  return `<div class="trend-bars">${bars}</div><div class="trend-labels">${labels}</div>`;
+}
+
+/* ---------------- sparklines ---------------- */
+function sparklineSVG(values, dates){
+  const W = 96, H = 28, PX = 2, PY = 5;
+  const n = values.length;
+  if (!n) return '';
+  const nums = values.map(v => (v === null || v === undefined) ? null : Number(v));
+  const nonNull = nums.filter(v => v !== null);
+  let min = 0, max = 0;
+  if (nonNull.length){ min = Math.min.apply(null, nonNull); max = Math.max.apply(null, nonNull); }
+  if (min === max){ min -= 1; max += 1; }
+  const span = max - min;
+  const px = (i, v) => [ (n === 1 ? 0.5 : i / (n - 1)) * (W - 2*PX) + PX, H - PY - ((v - min) / span) * (H - 2*PY) ];
+
+  let stroke = '', fill = '';
+  let segOpen = false, first = null, last = null;
+  for (let i = 0; i < n; i++){
+    const v = nums[i];
+    if (v === null){ segOpen = false; continue; }
+    const [x, y] = px(i, v);
+    if (!segOpen){
+      stroke += 'M' + x.toFixed(1) + ' ' + y.toFixed(1);
+      first = [x, y];
+      segOpen = true;
+    } else {
+      stroke += ' L' + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    last = [x, y];
+  }
+  if (!stroke) return '';
+  if (first && last && first[0] !== last[0]){
+    fill = stroke + ' L' + last[0].toFixed(1) + ' ' + (H-PY).toFixed(1) +
+           ' L' + first[0].toFixed(1) + ' ' + (H-PY).toFixed(1) + ' Z';
+  }
+  const gradId = 'g' + Math.random().toString(36).slice(2, 8);
+  const lastVal = nums[n - 1];
+  const lastPt = nums[n - 1] === null ? null : px(n - 1, nums[n - 1]);
+  return `
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Trend over ${dates.length} days">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      ${fill ? '<path d="' + fill + '" fill="url(#' + gradId + ')"/>' : ''}
+      <path d="${stroke}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      ${lastPt ? '<circle cx="' + lastPt[0].toFixed(1) + '" cy="' + lastPt[1].toFixed(1) + '" r="2.6" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>' : ''}
+    </svg>`;
+}
+
+/* ---------------- tooltip ---------------- */
+const tipEl = document.getElementById('tipEl');
+function showTip(html, x, y){
+  tipEl.innerHTML = html;
+  tipEl.classList.add('show');
+  positionTip(x, y);
+}
+function positionTip(x, y){
+  const r = tipEl.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  tipEl.style.left = left + 'px';
+  tipEl.style.top = top + 'px';
+}
+function hideTip(){ tipEl.classList.remove('show'); }
+
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('[data-tip]') || e.target.closest('[data-cell]');
+  if (!el) return;
+  let html = '';
+  if (el.hasAttribute('data-tip')) html = el.getAttribute('data-tip');
+  else html = cellTip(el);
+  if (html) showTip(html, e.clientX, e.clientY);
+});
+document.addEventListener('mousemove', e => {
+  if (tipEl.classList.contains('show')) positionTip(e.clientX, e.clientY);
+});
+document.addEventListener('mouseout', e => {
+  if (!e.relatedTarget || !tipEl.contains(e.relatedTarget)) hideTip();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideTip(); });
+
+function dayTip(title, dates, values){
+  const rows = dates.map((d, i) => {
+    const v = values[i];
+    const valCls = v === null || v === undefined ? 'nd' : (v === 0 ? 'zero' : '');
+    const val = v === null || v === undefined ? 'no data' : (v + ' order' + (v === 1 ? '' : 's'));
+    return '<div class="tip-row"><span class="r-date">' + esc(fmtDate(d)) + '</span><span class="r-val ' + valCls + '">' + val + '</span></div>';
+  }).join('');
+  return '<div class="tip-title">' + esc(title) + '</div><div class="tip-rows">' + rows + '</div>';
+}
+function cellTip(el){
+  const matrix = el.getAttribute('data-matrix');
+  const c = parseInt(el.getAttribute('data-c'), 10);
+  const tr = el.closest('tr');
+  if (isNaN(c) || !tr) return '';
+  const date = fmtDate(STATE.dates[c]);
+  const vText = el.textContent;
+  if (matrix === 'merchant'){
+    const name = tr.getAttribute('data-name') || 'Merchant';
+    const id = tr.getAttribute('data-id') || '';
+    const nd = vText === '–';
+    const val = nd ? 'no data' : (vText + ' order' + (vText === '1' ? '' : 's'));
+    const cls = nd ? 'nd' : (vText === '0' ? 'zero' : '');
+    return '<div class="tip-title">' + esc(name) + ' <span class="mid">#' + esc(id) + '</span></div>' +
+      '<div class="tip-rows"><div class="tip-row"><span class="r-date">' + esc(date) + '</span><span class="r-val ' + cls + '">' + val + '</span></div></div>';
+  }
+  if (matrix === 'kam'){
+    const name = tr.getAttribute('data-kam') || 'KAM';
+    const cnt = tr.getAttribute('data-cnt') || '';
+    const val = vText + ' orders';
+    const cls = vText === '0' ? 'zero' : '';
+    return '<div class="tip-title">' + esc(name) + ' <span class="mid">(' + cnt + ' merchants)</span></div>' +
+      '<div class="tip-rows"><div class="tip-row"><span class="r-date">' + esc(date) + '</span><span class="r-val ' + cls + '">' + val + '</span></div></div>';
+  }
+  return '';
+}
+
+/* ---------------- loading skeletons ---------------- */
+function renderSkeletons(){
+  const nums = document.querySelectorAll('#panel-dashboard .stat .num');
+  nums.forEach(n => {
+    n.innerHTML = '<div class="skel num"></div>';
+  });
+  document.getElementById('statTodayTrend').innerHTML = '';
+  const sec = document.getElementById('kamSections');
+  let html = '';
+  for (let i = 0; i < 3; i++){
+    html += '<div class="kam-section" style="padding:0">'
+      + '<div class="kam-head" style="cursor:default"><span class="skel line" style="width:140px"></span></div>'
+      + '<table class="merchants"><tbody>';
+    for (let r = 0; r < 4; r++){
+      html += '<tr><td><div class="skel line" style="width:' + (110 + r * 14) + 'px;margin-bottom:6px"></div><div class="skel line" style="width:60px"></div></td>'
+        + '<td><div class="skel line" style="width:96px;height:28px"></div></td>'
+        + '<td><div class="skel line" style="width:44px;height:14px"></div></td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+  sec.innerHTML = html;
+}
+
+/* ---------------- data load ---------------- */
+async function loadData(){
+  const btn = document.getElementById('refreshBtn');
+  if (STATE.loading) return;
+  btn.classList.add('loading');
+  hideError();
+  try {
+    if (!CONFIG.WEB_APP_URL || CONFIG.WEB_APP_URL.indexOf("PASTE_YOUR") === 0){
+      document.getElementById('emptyState').style.display = 'block';
+      renderSkeletons();
+      return;
+    }
+    STATE.loading = true;
+    renderSkeletons();
+    const res = await fetch(CONFIG.WEB_APP_URL, {cache:"no-store"});
+    if (!res.ok) throw new Error('Server returned ' + res.status);
+    const json = await res.json();
+    STATE.dates = json.dates || [];
+    STATE.merchants = (json.merchants || []).map(m => ({
+      ...m,
+      orders: normalizeOrders(m.orders, STATE.dates.length),
+      delivered: normalizeOrders(m.delivered, STATE.dates.length),
+      cod: normalizeOrders(m.cod, STATE.dates.length),
+      deliveryCharge: normalizeOrders(m.deliveryCharge, STATE.dates.length),
+      revenue: normalizeOrders(m.revenue, STATE.dates.length)
+    }));
+    STATE.lastSync = Date.now();
+    STATE.hasData = true;
+    STATE.loading = false;
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('legendRow').style.display = '';
+    const flaggedCount = STATE.merchants.filter(m => isFlagged(m.orders)).length;
+    document.getElementById('flaggedTabCount').textContent = flaggedCount ? flaggedCount : '';
+    renderActiveTab();
+  } catch(err){
+    console.error(err);
+    STATE.loading = false;
+    document.getElementById('emptyState').style.display = 'none';
+    showError(err);
+  } finally {
+    btn.classList.remove('loading');
+  }
+}
+
+function showError(err){
+  document.getElementById('errorMsg').textContent =
+    'Check that the server is running and that /api/data is reachable. That endpoint proxies the Apps Script Web App, which must be deployed with "Anyone with the link" access.';
+  document.getElementById('errorBanner').classList.add('show');
+}
+function hideError(){ document.getElementById('errorBanner').classList.remove('show'); }
+
+/* ---------------- freshness / countdown ---------------- */
+function updateFreshness(){
+  const auto = document.getElementById('autoLabel');
+  if (!STATE.lastSync){
+    auto.textContent = '';
+    document.getElementById('staleBanner').classList.remove('show');
+    return;
+  }
+  const since = Date.now() - STATE.lastSync;
+  const remain = Math.max(0, CONFIG.REFRESH_MS - since);
+  const mm = Math.floor(remain / 60000);
+  const ss = Math.floor((remain % 60000) / 1000);
+  auto.textContent = 'auto ' + mm + ':' + (ss < 10 ? '0' : '') + ss;
+  if (since > CONFIG.REFRESH_MS * 1.2){
+    document.getElementById('staleMsg').textContent =
+      'Data may be stale — last synced ' + fmtDateTime(STATE.lastSync) + '. Auto-refresh may have been interrupted.';
+    document.getElementById('staleBanner').classList.add('show');
+  } else {
+    document.getElementById('staleBanner').classList.remove('show');
+  }
+}
+
+/* ---------------- grouping / filter ---------------- */
+function buildGroups(list){
+  const groups = {};
+  list.forEach(m => {
+    const kam = m.assignedKam || "(Unassigned)";
+    if (!groups[kam]) groups[kam] = [];
+    groups[kam].push(m);
+  });
+  return groups;
+}
+
+function populateKamFilter(groups){
+  const sel = document.getElementById('kamFilter');
+  const cur = sel.value;                       // remember the selection before rebuilding
+  sel.innerHTML = '<option value="">All KAMs</option>';
+  Object.keys(groups).sort().forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k; opt.textContent = k + ' (' + groups[k].length + ')';
+    sel.appendChild(opt);
+  });
+  sel.value = cur;                             // re-apply it (no-op when '' or the KAM vanished)
+}
+
+/* ---------------- dashboard render ---------------- */
+function render(){
+  try { renderDashboardInner(); }
+  catch(err){ renderTabError(document.getElementById('kamSections'), err); }
+}
+
+function renderDashboardInner(){
+  if (!STATE.hasData && STATE.loading){ renderSkeletons(); return; }
+  if (!STATE.hasData){ document.getElementById('kamSections').innerHTML = ''; return; }
+
+  const filtered = getFilteredPool();
+  const groups = buildGroups(filtered);
+  STATE.groups = groups;
+  populateKamFilter(buildGroups(STATE.merchants));
+
+  const dates = STATE.dates;
+  const todayIdx = dates.length - 1;
+  const yestIdx = todayIdx - 1;
+  const todayTotal = STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[todayIdx]) || 0), 0);
+  const yestTotal = yestIdx >= 0 ? STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[yestIdx]) || 0), 0) : null;
+  const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
+
+  // Sum of COD, and sum of Revenue, across every merchant, every day in the
+  // current date window. These come from separate sheet columns (COD, Revenue).
+  const totalCod = STATE.merchants.reduce((sum, m) => {
+    const codArr = safeOrders(m.cod);
+    return sum + codArr.reduce((s, v) => s + (Number(v) || 0), 0);
+  }, 0);
+  const totalRevenue = STATE.merchants.reduce((sum, m) => {
+    const revArr = safeOrders(m.revenue);
+    return sum + revArr.reduce((s, v) => s + (Number(v) || 0), 0);
+  }, 0);
+
+  document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
+  document.getElementById('statToday').textContent = fmtNum(todayTotal);
+  document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
+  document.getElementById('statCod').textContent = fmtMoney(totalCod);
+  document.getElementById('statRevenue').textContent = fmtMoney(totalRevenue);
+  document.getElementById('statSynced').textContent = fmtDateTime(STATE.lastSync) || "–";
+
+  // today trend vs yesterday
+  const trend = document.getElementById('statTodayTrend');
+  if (yestTotal === null){
+    trend.className = 'trend flat'; trend.textContent = 'first day';
+  } else {
+    const diff = todayTotal - yestTotal;
+    const pct = yestTotal ? Math.round((diff / yestTotal) * 100) : null;
+    const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+    const sign = diff > 0 ? '▲ ' : diff < 0 ? '▼ ' : '';
+    const pctTxt = pct !== null ? ' (' + (pct > 0 ? '+' : '') + pct + '%)' : '';
+    trend.className = 'trend ' + cls;
+    trend.textContent = sign + (diff > 0 ? '+' : '') + fmtNum(diff) + ' vs yest' + pctTxt;
+  }
+
+  document.getElementById('footNote').textContent =
+    'BEEACON · ' + dates.length + ' day window · updated ' + fmtDateTime(STATE.lastSync);
+
+  const dailyTotals = dates.map((d, i) => filtered.reduce((s, m) => s + (Number(safeOrders(m.orders)[i]) || 0), 0));
+  document.getElementById('trendChart').innerHTML = renderTrendChart(dailyTotals, dates);
+
+  const container = document.getElementById('kamSections');
+  container.innerHTML = "";
+  const last7start = Math.max(0, dates.length - 7);
+  const dateWindow = dates.slice(last7start);
+
+  Object.keys(groups).sort().forEach(kam => {
+    const rows = groups[kam].sort((a,b)=>a.businessName.localeCompare(b.businessName));
+    const flaggedCount = rows.filter(m => isFlagged(m.orders)).length;
+    const collapsed = !!STATE.collapsed[kam];
+
+    const section = document.createElement('div');
+    section.className = 'kam-section' + (collapsed ? ' collapsed' : '');
+
+    const head = document.createElement('div');
+    head.className = 'kam-head';
+    head.setAttribute('role', 'button');
+    head.setAttribute('tabindex', '0');
+    head.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    head.innerHTML = `
+      <div class="left">
+        <span class="caret">▾</span>
+        <span class="name">${esc(kam)}</span>
+        <span class="count">${rows.length} merchant${rows.length>1?'s':''}</span>
+      </div>
+      ${flaggedCount ? `<span class="kam-alert">${flaggedCount} off</span>` : ''}
+    `;
+    const toggle = () => {
+      STATE.collapsed[kam] = !STATE.collapsed[kam];
+      lsSetJSON(LS.collapsed, STATE.collapsed);
+      render();
+    };
+    head.addEventListener('click', toggle);
+    head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    section.appendChild(head);
+
+    const table = document.createElement('table');
+    table.className = 'merchants';
+    table.innerHTML = `
+      <thead><tr>
+        <th>Merchant</th>
+        <th>Last ${dateWindow.length} days</th>
+        <th>Today</th>
+        <th></th>
+      </tr></thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector('tbody');
+
+    rows.forEach(m => {
+      const orders = safeOrders(m.orders);
+      const flag = isFlagged(orders);
+      const orderWindow = orders.slice(last7start);
+      const todayVal = orders[orders.length-1];
+      const yestVal = orders.length > 1 ? orders[orders.length-2] : null;
+
+      let deltaHtml = '';
+      if (yestVal !== null && yestVal !== undefined){
+        const diff = (todayVal||0) - (yestVal||0);
+        const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+        const sign = diff > 0 ? '+' : '';
+        deltaHtml = `<span class="delta ${cls}">${sign}${diff}</span>`;
+      }
+
+      const spark = sparklineSVG(orderWindow, dateWindow);
+      const tip = dayTip(m.businessName + ' · #' + m.businessId, dateWindow, orderWindow)
+        .replace(/"/g, '&quot;');
+
+      const tr = document.createElement('tr');
+      if (flag) tr.className = 'flagged';
+      tr.innerHTML = `
+        <td>
+          <div class="mname">${flag ? '<span class="flag-pip"></span>' : ''}${esc(m.businessName)}</div>
+          <div class="mid">#${esc(m.businessId)}</div>
+        </td>
+        <td><div class="spark-wrap" data-tip="${tip}">${spark}</div></td>
+        <td><span class="today-val ${(!todayVal)?'zero':''}">${todayVal ?? '–'}</span>${deltaHtml}</td>
+        <td>${flag ? `<span class="badge off">OFF ${flaggedDays(orders)}D</span>` : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    section.appendChild(table);
+    container.appendChild(section);
+  });
+}
+
+/* ---------------- tab switching ---------------- */
+const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix','top10'];
+
+function activeTab(){
+  return (document.querySelector('.tabbtn.active') || {}).dataset?.tab || 'dashboard';
+}
+function setTab(tab, opts){
+  opts = opts || {};
+  if (TABS.indexOf(tab) === -1) tab = 'dashboard';
+  document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  document.querySelectorAll('.tabbtn').forEach(b => {
+    b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
+    if (b.dataset.tab === tab && opts.focus) b.focus();
+  });
+  if (!opts.noHash) history.replaceState(null, '', '#' + tab);
+  lsSet(LS.tab, tab);
+  renderActiveTab(tab);
+}
+
+document.getElementById('tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('.tabbtn');
+  if (!btn) return;
+  setTab(btn.dataset.tab);
+});
+document.getElementById('tabNav').addEventListener('keydown', e => {
+  const keys = ['ArrowRight','ArrowLeft','Home','End'];
+  if (keys.indexOf(e.key) === -1) return;
+  e.preventDefault();
+  const btns = Array.from(document.querySelectorAll('.tabbtn'));
+  let idx = btns.findIndex(b => b.classList.contains('active'));
+  if (e.key === 'ArrowRight') idx = (idx + 1) % btns.length;
+  else if (e.key === 'ArrowLeft') idx = (idx - 1 + btns.length) % btns.length;
+  else if (e.key === 'Home') idx = 0;
+  else if (e.key === 'End') idx = btns.length - 1;
+  setTab(btns[idx].dataset.tab, { focus: true });
+});
+window.addEventListener('hashchange', () => {
+  const tab = location.hash.replace('#','');
+  if (TABS.indexOf(tab) !== -1) setTab(tab, { noHash: true });
+});
+
+function renderActiveTab(tab){
+  tab = tab || activeTab();
+  if (tab === 'dashboard') render();
+  else if (tab === 'flagged') renderFlagged();
+  else if (tab === 'merchantMatrix') renderMerchantMatrix();
+  else if (tab === 'kamSummary') renderKamSummary();
+  else if (tab === 'kamMatrix') renderKamMatrix();
+  else if (tab === 'top10') renderTop10();
+}
+
+/* ---------------- flagged tab ---------------- */
+/* ---------------- off days tab ---------------- */
+const OFF_PAGE_SIZE = 15;
+
+function renderFlagged(){
+  const wrap = document.getElementById('panel-flagged');
+  try { renderFlaggedInner(); }
+  catch(err){ renderTabError(wrap, err); }
+}
+function renderFlaggedInner(){
+  const kamPick = document.getElementById('kamFilter').value;
+  const pool = kamPick
+    ? STATE.merchants.filter(m => (m.assignedKam || "(Unassigned)") === kamPick)
+    : STATE.merchants;
+
+  const withDays = pool.map(m => ({ m, days: flaggedDays(m.orders) }));
+  const c2 = withDays.filter(r => r.days >= 2).length;
+  const c3 = withDays.filter(r => r.days >= 3).length;
+  const c7 = withDays.filter(r => r.days >= 7).length;
+  document.getElementById('offCount2').textContent = fmtNum(c2);
+  document.getElementById('offCount3').textContent = fmtNum(c3);
+  document.getElementById('offCount7').textContent = fmtNum(c7);
+  document.querySelectorAll('.off-stat').forEach(b =>
+    b.classList.toggle('active', Number(b.dataset.threshold) === STATE.offThreshold));
+
+  document.getElementById('offListTitle').textContent = `Businesses Off ${STATE.offThreshold}+ Days`;
+
+  const search = (document.getElementById('offSearch').value || '').trim().toLowerCase();
+  let list = withDays.filter(r => r.days >= STATE.offThreshold);
+  if (search){
+    list = list.filter(r => (r.m.businessName + ' ' + r.m.businessId).toLowerCase().indexOf(search) !== -1);
+  }
+  list.sort((a, b) => b.days - a.days || a.m.businessName.localeCompare(b.m.businessName));
+
+  const totalPages = Math.max(1, Math.ceil(list.length / OFF_PAGE_SIZE));
+  if (STATE.offPage > totalPages) STATE.offPage = totalPages;
+  if (STATE.offPage < 1) STATE.offPage = 1;
+  const startIdx = (STATE.offPage - 1) * OFF_PAGE_SIZE;
+  const pageItems = list.slice(startIdx, startIdx + OFF_PAGE_SIZE);
+
+  const rowsHtml = pageItems.map((r, i) => {
+    const orders = safeOrders(r.m.orders);
+    let lastIdx = -1;
+    for (let j = orders.length - 1; j >= 0; j--){ if (Number(orders[j]) > 0){ lastIdx = j; break; } }
+    const lastOrder = lastIdx === -1 ? '–' : fmtDate(STATE.dates[lastIdx]);
+    return `<tr>
+        <td>${startIdx + i + 1}</td>
+        <td>${esc(r.m.businessName)}<div class="mid">#${esc(r.m.businessId)}</div></td>
+        <td><span class="kam-tag">${esc(r.m.assignedKam || 'Unassigned')}</span></td>
+        <td>${lastOrder}</td>
+        <td>${r.days}</td>
+        <td><span class="badge off">Inactive</span></td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('offTable').innerHTML =
+    `<thead><tr><th>Rank</th><th>Business</th><th>KAM</th><th>Last Order</th><th>Days Off</th><th>Status</th></tr></thead>` +
+    `<tbody>${rowsHtml || '<tr><td colspan="6">No matches.</td></tr>'}</tbody>`;
+
+  const pag = document.getElementById('offPagination');
+  let pagHtml = '';
+  for (let p = 1; p <= totalPages; p++){
+    pagHtml += `<button class="pg-btn ${p === STATE.offPage ? 'active' : ''}" type="button" data-page="${p}">${p}</button>`;
+  }
+  pag.innerHTML = pagHtml;
+}
+
+document.querySelectorAll('.off-stat').forEach(btn => {
+  btn.addEventListener('click', () => {
+    STATE.offThreshold = Number(btn.dataset.threshold);
+    STATE.offPage = 1;
+    renderFlagged();
+  });
+});
+document.getElementById('offSearch').addEventListener('input', debounce(() => {
+  STATE.offPage = 1;
+  renderFlagged();
+}, 180));
+document.getElementById('offPagination').addEventListener('click', e => {
+  const btn = e.target.closest('.pg-btn');
+  if (!btn) return;
+  STATE.offPage = Number(btn.dataset.page);
+  renderFlagged();
+});
+
+/* ---------------- matrix sorting ---------------- */
+function sortRows(rows, s, dates){
+  const arr = rows.slice();
+  if (s.dir === 0) return arr;
+  const asc = s.dir === 1 ? 1 : -1;
+  arr.sort((a,b) => {
+    let av, bv;
+    if (s.col === 'name'){ av = a.name; bv = b.name; return a.name.localeCompare(b.name) * asc; }
+    else if (s.col === 'total'){ av = a.total; bv = b.total; }
+    else { av = a.values[parseInt(s.col,10)] || 0; bv = b.values[parseInt(s.col,10)] || 0; }
+    if (av === bv) return 0;
+    return (av > bv ? 1 : -1) * asc;
+  });
+  return arr;
+}
+function toggleSort(s, col){
+  if (s.col !== col){ s.col = col; s.dir = 1; }
+  else s.dir = (s.dir + 1) % 3;   // asc -> desc -> native
+}
+function sortArrow(dir){
+  return dir === 1 ? 'ascending' : dir === 2 ? 'descending' : 'none';
+}
+
+/* ---------------- merchant matrix ---------------- */
+function renderMerchantMatrix(){
+  const table = document.getElementById('merchantMatrixTable');
+  try { renderMerchantMatrixInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+function renderMerchantMatrixInner(table){
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+  const dates = STATE.dates;
+  const s = STATE.merchantSort;
+
+  const rows = getFilteredPool().map(m => {
+    const values = safeOrders(m.orders);
+    return { m, name: m.businessName, values,
+      total: values.reduce((a,v) => a + (Number(v) || 0), 0) };
+  });
+  const sorted = sortRows(rows, s, dates);
+
+  const thead = `<thead><tr>
+      <th data-col="name" aria-sort="${sortArrow(s.col==='name'?s.dir:0)}">Merchant</th>
+      ${dates.map((d,i) => `<th data-col="${i}" aria-sort="${sortArrow(s.col===String(i)?s.dir:0)}">${esc(fmtDate(d))}</th>`).join('')}
+      <th data-col="total" aria-sort="${sortArrow(s.col==='total'?s.dir:0)}">Total</th>
+    </tr></thead>`;
+
+  const colTotals = dates.map(() => 0);
+  let grandTotal = 0;
+
+  const bodyRows = sorted.map((row, r) => {
+    const { m, values } = row;
+    let rowTotal = 0;
+    const cells = dates.map((d,i) => {
+      const v = Number(values[i]) || 0;
+      rowTotal += v; colTotals[i] += v;
+      const nd = values[i] === null || values[i] === undefined;
+      const cls = nd ? 'zero' : (v === 0 ? 'zero' : (v >= 10 ? 'hi' : ''));
+      const shown = nd ? '–' : v;
+      return `<td class="${cls}" data-cell data-matrix="merchant" data-r="${r}" data-c="${i}">${shown}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    return `<tr data-name="${esc(m.businessName)}" data-id="${esc(m.businessId)}"><td>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+  }).join('');
+
+  const tfoot = `<tfoot><tr>
+      <td>Total</td>
+      ${colTotals.map(t => `<td>${t}</td>`).join('')}
+      <td>${grandTotal}</td>
+    </tr></tfoot>`;
+
+  table.innerHTML = thead + `<tbody>${bodyRows || '<tr><td colspan="' + (dates.length + 2) + '">No merchants match the current filter.</td></tr>'}</tbody>` + tfoot;
+  bindMatrixSort(table, 'merchantSort');
+}
+
+/* ---------------- kam matrix ---------------- */
+function renderKamMatrix(){
+  const table = document.getElementById('kamMatrixTable');
+  try { renderKamMatrixInner(table); }
+  catch(err){ renderTabError(table.parentElement, err); }
+}
+function renderKamMatrixInner(table){
+  if (!STATE.merchants.length){ table.innerHTML = ''; return; }
+  const dates = STATE.dates;
+  const s = STATE.kamSort;
+  const groups = buildGroups(STATE.merchants);
+  const kams = Object.keys(groups).sort();
+
+  const rows = kams.map(kam => {
+    const list = groups[kam];
+    const values = dates.map((d,i) => list.reduce((s2,m) => s2 + (Number(safeOrders(m.orders)[i]) || 0), 0));
+    return { name: kam, values, list,
+      total: values.reduce((a,v) => a + v, 0) };
+  });
+  const sorted = sortRows(rows, s, dates);
+
+  const thead = `<thead><tr>
+      <th data-col="name" aria-sort="${sortArrow(s.col==='name'?s.dir:0)}">KAM</th>
+      ${dates.map((d,i) => `<th data-col="${i}" aria-sort="${sortArrow(s.col===String(i)?s.dir:0)}">${esc(fmtDate(d))}</th>`).join('')}
+      <th data-col="total" aria-sort="${sortArrow(s.col==='total'?s.dir:0)}">Total</th>
+    </tr></thead>`;
+
+  const colTotals = dates.map(() => 0);
+  let grandTotal = 0;
+
+  const bodyRows = sorted.map((row, r) => {
+    let rowTotal = 0;
+    const cells = dates.map((d,i) => {
+      const v = row.values[i];
+      rowTotal += v; colTotals[i] += v;
+      const cls = v === 0 ? 'zero' : (v >= 20 ? 'hi' : '');
+      return `<td class="${cls}" data-cell data-matrix="kam" data-r="${r}" data-c="${i}">${v}</td>`;
+    }).join('');
+    grandTotal += rowTotal;
+    return `<tr data-kam="${esc(row.name)}" data-cnt="${row.list.length}"><td>${esc(row.name)} <span class="mid">(${row.list.length})</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+  }).join('');
+
+  const tfoot = `<tfoot><tr>
+      <td>Total</td>
+      ${colTotals.map(t => `<td>${t}</td>`).join('')}
+      <td>${grandTotal}</td>
+    </tr></tfoot>`;
+
+  table.innerHTML = thead + `<tbody>${bodyRows}</tbody>` + tfoot;
+  bindMatrixSort(table, 'kamSort');
+}
+
+function bindMatrixSort(table, stateKey){
+  table.querySelectorAll('thead th[data-col]').forEach(th => {
+    th.addEventListener('click', () => {
+      toggleSort(STATE[stateKey], th.getAttribute('data-col'));
+      if (stateKey === 'merchantSort') lsSetJSON(LS.mSort, STATE.merchantSort);
+      else lsSetJSON(LS.kSort, STATE.kamSort);
+      renderActiveTab();
+    });
+  });
+}
+
+/* ---------------- kam summary ---------------- */
+function renderKamSummary(){
+  const wrap = document.getElementById('kamCards');
+  try { renderKamSummaryInner(wrap); }
+  catch(err){ renderTabError(wrap.parentElement, err); }
+}
+function renderKamSummaryInner(wrap){
+  if (!STATE.merchants.length){ wrap.innerHTML = ''; return; }
+  const groups = buildGroups(STATE.merchants);
+
+  wrap.innerHTML = Object.keys(groups).sort().map(kam => {
+    const list = groups[kam];
+    const processed = sumField(list, 'orders');
+    const delivered = sumField(list, 'delivered');
+    const deliveryRate = processed ? (delivered / processed * 100) : 0;
+    const delCharge = sumField(list, 'deliveryCharge');
+    const revenue = sumField(list, 'revenue');
+    const initial = esc((kam || '?').trim().charAt(0).toUpperCase() || '?');
+
+    return `
+      <div class="kam-card">
+        <div class="kam-card-head">
+          <div class="kam-avatar">${initial}</div>
+          <div>
+            <span class="name">${esc(kam)}</span>
+            <span class="role">Key Account Manager</span>
+          </div>
+        </div>
+        <div class="kam-stat-grid">
+          <div class="kam-stat-box"><span class="num">${fmtNum(list.length)}</span><span class="lbl">Businesses</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtNum(processed)}</span><span class="lbl">Processed</span></div>
+          <div class="kam-stat-box"><span class="num">${deliveryRate.toFixed(2)}%</span><span class="lbl">Delivery Rate</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(delCharge)}</span><span class="lbl">Del. Charge</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(revenue)}</span><span class="lbl">Revenue</span></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ---------------- top businesses leaderboard ---------------- */
+const TOP_METRIC_LABELS = {
+  revenue: 'Total Revenue (RVN)',
+  orders: 'Total Orders',
+  cod: 'Total COD',
+  deliveryCharge: 'Total Delivery Charge'
+};
+const TOP_LIMIT = 50;
+
+function renderTop10(){
+  const wrap = document.getElementById('topList');
+  try { renderTop10Inner(wrap); }
+  catch(err){ renderTabError(wrap.parentElement, err); }
+}
+function renderTop10Inner(wrap){
+  if (!STATE.merchants.length){ wrap.innerHTML = ''; return; }
+
+  const metric = STATE.topMetric;
+  const rows = STATE.merchants.map(m => {
+    const orders = sumArr(m.orders);
+    const delivered = sumArr(m.delivered);
+    const deliveryPct = orders ? (delivered / orders * 100) : 0;
+    const revenue = sumArr(m.revenue);
+    const cod = sumArr(m.cod);
+    const deliveryCharge = sumArr(m.deliveryCharge);
+    const sortVal = metric === 'orders' ? orders : metric === 'cod' ? cod : metric === 'deliveryCharge' ? deliveryCharge : revenue;
+    return { m, orders, deliveryPct, revenue, cod, deliveryCharge, sortVal };
+  }).sort((a, b) => b.sortVal - a.sortVal).slice(0, TOP_LIMIT);
+
+  document.getElementById('topHint').textContent =
+    `Top ${rows.length} of ${STATE.merchants.length} businesses, sorted by ${TOP_METRIC_LABELS[metric]}, across the current date window.`;
+
+  wrap.innerHTML = rows.map((r, i) => `
+    <div class="top-row">
+      <div class="top-rank">${i + 1}</div>
+      <div class="top-meta">
+        <div class="name">${esc(r.m.businessName)}</div>
+        <div class="sub">ID: ${esc(r.m.businessId)} · KAM: <span class="kam-tag">${esc(r.m.assignedKam || 'Unassigned')}</span></div>
+      </div>
+      <div class="top-stats">
+        <div class="tstat"><span class="num">${fmtNum(r.orders)}</span><span class="lbl">Orders</span></div>
+        <div class="tstat"><span class="num pct">${r.deliveryPct.toFixed(1)}%</span><span class="lbl">Delivery</span></div>
+        <div class="tstat"><span class="num">${fmtMoney(r.revenue)}</span><span class="lbl">Revenue</span></div>
+        <div class="tstat"><span class="num">${fmtMoney(r.cod)}</span><span class="lbl">COD</span></div>
+      </div>
+    </div>`).join('') || '<div class="empty-state"><div class="big">No merchants match</div></div>';
+}
+
+document.getElementById('topMetric').addEventListener('change', e => {
+  STATE.topMetric = e.target.value;
+  renderTop10();
+});
+
+/* ---------------- events ---------------- */
+document.getElementById('searchInput').addEventListener('input', debounce(() => {
+  lsSet(LS.search, document.getElementById('searchInput').value);
+  renderActiveTab();
+}, 180));
+document.getElementById('kamFilter').addEventListener('change', () => {
+  lsSet(LS.kam, document.getElementById('kamFilter').value);
+  renderActiveTab();
+});
+document.getElementById('refreshBtn').addEventListener('click', loadData);
+document.getElementById('retryBtn').addEventListener('click', loadData);
+document.getElementById('staleDismiss').addEventListener('click', () => {
+  document.getElementById('staleBanner').classList.remove('show');
+});
+
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  lsSet(LS.theme, next);
+});
+
+/* ---------------- boot ---------------- */
+(function restoreState(){
+  // search + kam filter
+  document.getElementById('searchInput').value = lsGet(LS.search, '');
+  document.getElementById('kamFilter').value = lsGet(LS.kam, '');
+  STATE.collapsed = lsGetJSON(LS.collapsed, {});
+  STATE.merchantSort = lsGetJSON(LS.mSort, { col:'name', dir:0 });
+  STATE.kamSort = lsGetJSON(LS.kSort, { col:'name', dir:0 });
+
+  // active tab from hash (deep link) then persisted
+  let tab = location.hash.replace('#','');
+  if (TABS.indexOf(tab) === -1) tab = lsGet(LS.tab, 'dashboard');
+  setTab(tab, { noHash: true });
+})();
+
+// icon injection
+document.querySelectorAll('.stat-icon').forEach(el => {
+  el.innerHTML = ICONS[el.getAttribute('data-icon')] || '';
+});
+
+loadData();
+setInterval(loadData, CONFIG.REFRESH_MS);
+setInterval(updateFreshness, 1000);
+updateFreshness();
+</script>
+</body>
+</html>
