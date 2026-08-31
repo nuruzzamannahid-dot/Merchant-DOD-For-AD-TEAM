@@ -94,6 +94,9 @@ app.post('/api/ingest', async (req, res) => {
       if (typeof m.cod !== 'undefined' && !Array.isArray(m.cod)) {
         return res.status(400).json({ error: `Merchant ${m.businessId}'s cod field must be an array if present.` });
       }
+      if (typeof m.revenue !== 'undefined' && !Array.isArray(m.revenue)) {
+        return res.status(400).json({ error: `Merchant ${m.businessId}'s revenue field must be an array if present.` });
+      }
     }
 
     const payload = JSON.stringify({ dates, merchants });
