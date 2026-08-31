@@ -25,6 +25,7 @@ nav.tabs .tab.active{color:#10b981;border-bottom-color:#10b981}
 .kpi-value{font-size:22px;font-weight:700}
 .kpi-value.green{color:#10b981}
 .kpi-value.pink{color:#ec4899}
+.kpi-value.blue{color:#5b9cf6}
 .card{background:#1a1d27;border:1px solid #2a2e3b;border-radius:12px;padding:4px;margin-bottom:20px}
 .card-title{padding:14px 16px 4px;font-size:14px;font-weight:600;color:#fff}
 table{border-collapse:collapse;width:100%;font-size:13px}
@@ -39,14 +40,15 @@ thead .sticky-col{background:#0f1117;z-index:3}
 .pill{padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}
 .pill.good{background:rgba(62,207,142,0.15);color:#10b981}
 .pill.bad{background:rgba(236,72,153,0.15);color:#ec4899}
+.pill.blue{background:rgba(59,130,246,0.15);color:#5b9cf6}
 .empty{padding:30px;text-align:center;color:#5a6078}
 .loading{padding:40px;text-align:center;color:#5a6078}
 .error-box{background:rgba(236,72,153,0.1);border:1px solid #ec4899;color:#ffb4d6;padding:14px 16px;border-radius:10px;margin-bottom:16px;font-size:13px}
 .chart-wrap{padding:16px}
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:180px;padding-bottom:24px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:220px;padding-bottom:28px;padding-left:4px;padding-right:4px}
 .bar{flex:1;background:#10b981;border-radius:4px 4px 0 0;min-height:4px;position:relative;transition:opacity .2s;cursor:pointer}
 .bar:hover{opacity:.7}
-.bar-label{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:10px;color:#5a6078;white-space:nowrap}
+.bar-label{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:#5a6078;white-space:nowrap}
 .bar-tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#0f1117;border:1px solid #2a2e3b;padding:4px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;margin-bottom:4px}
 .bar:hover .bar-tip{opacity:1}
 .top-card{display:flex;align-items:center;gap:14px;background:#1a1d27;border:1px solid #2a2e3b;border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:all .2s}
@@ -65,7 +67,7 @@ thead .sticky-col{background:#0f1117;z-index:3}
 .kam-av{width:40px;height:40px;border-radius:50%;background:rgba(59,130,246,0.15);color:#5b9cf6;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px}
 .kam-name{font-weight:700;font-size:15px}
 .kam-role{font-size:12px;color:#5a6078}
-.kam-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kam-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 .kam-stat{background:#0f1117;border-radius:10px;padding:10px;text-align:center}
 .kam-stat-v{font-weight:700;font-size:17px}
 .kam-stat-l{font-size:11px;color:#5a6078;margin-top:3px}
@@ -109,6 +111,7 @@ thead .sticky-col{background:#0f1117;z-index:3}
     <div class="kpi"><div class="kpi-label">Orders today</div><div class="kpi-value green" id="kpiOrd">0</div><div class="sub" id="kpiOrdSub"></div></div>
     <div class="kpi"><div class="kpi-label">Off 2+ days</div><div class="kpi-value pink" id="kpiOff">0</div></div>
     <div class="kpi"><div class="kpi-label">Total COD</div><div class="kpi-value" id="kpiCod">৳0</div></div>
+    <div class="kpi"><div class="kpi-label">Total Delivery Charge</div><div class="kpi-value blue" id="kpiDc">৳0</div></div>
     <div class="kpi"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="kpiRvn">৳0</div></div>
     <div class="kpi"><div class="kpi-label">Last synced</div><div class="kpi-value" id="kpiSync">--:--</div></div>
   </div>
@@ -151,11 +154,11 @@ thead .sticky-col{background:#0f1117;z-index:3}
 <div id="md" class="panel">
   <div class="card">
     <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
-      <span class="card-title" style="padding:0">Business Performance by Date</span>
-      <input type="text" placeholder="Search..." onkeyup="filter('tblMd',this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
+      <span class="card-title" style="padding:0">Business × Date Count</span>
+      <input type="text" placeholder="Search business..." onkeyup="filter('tblMd',this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
     </div>
     <div class="table-scroll">
-      <table id="tblMd"><thead><tr><th>Business</th><th>Date</th><th>Processed</th><th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th></tr></thead><tbody></tbody></table>
+      <table id="tblMd"><thead><tr><th>Business</th><th>Business ID</th><th>KAM</th><th>Dates Active</th><th>Total Days</th><th>Total Orders</th><th>Total Delivered</th><th>Avg Delivery %</th></tr></thead><tbody></tbody></table>
     </div>
     <div class="pag" id="pagMd"></div>
   </div>
@@ -203,7 +206,6 @@ function n(x){return x==null?0:parseFloat(x)||0}
 function fmt(x){return x.toLocaleString('en-US')}
 function bdt(x){return'৳'+fmt(Math.round(x))}
 function dr(d){return d.proc>0?((d.del/d.proc)*100).toFixed(2):'0.00'}
-function rr(d){return d.proc>0?((d.ret/d.proc)*100).toFixed(2):'0.00'}
 
 async function load(){
   try{
@@ -221,8 +223,7 @@ async function load(){
     renderAll();
   }catch(e){
     console.error(e);
-    document.body.insertAdjacentHTML('afterbegin','<div class="error-box">Failed to load from SheetDB. Using demo data. <button onclick="location.reload()" style="margin-left:10px">Retry</button></div>');
-    // fallback to embedded data would go here
+    document.body.insertAdjacentHTML('afterbegin','<div class="error-box">Failed to load from SheetDB. <button onclick="location.reload()" style="margin-left:10px">Retry</button></div>');
   }
 }
 
@@ -247,6 +248,7 @@ function renderAll(){
   const diff=ordToday-prevOrd;
   const pct=prevOrd>0?((diff/prevOrd)*100).toFixed(0):0;
   const totalCod=data.reduce((s,d)=>s+d.cod,0);
+  const totalDc=data.reduce((s,d)=>s+d.dc,0);
   const totalRvn=data.reduce((s,d)=>s+d.rvn,0);
 
   // Off days
@@ -271,20 +273,27 @@ function renderAll(){
   document.getElementById('kpiOff').textContent=fmt(off2);
   document.getElementById('tabBadge').textContent=fmt(off2);
   document.getElementById('kpiCod').textContent=bdt(totalCod);
+  document.getElementById('kpiDc').textContent=bdt(totalDc);
   document.getElementById('kpiRvn').textContent=bdt(totalRvn);
   document.getElementById('off2').textContent=fmt(off2);
   document.getElementById('off3').textContent=fmt(off3);
   document.getElementById('off7').textContent=fmt(off7);
 
-  // Chart
+  // Chart - FIXED: use min-max scaling with proper baseline
   const daily={};
   data.forEach(d=>{daily[d.date]=(daily[d.date]||0)+d.proc});
   const chartDates=Object.keys(daily).sort();
-  const maxV=Math.max(...Object.values(daily),1);
+  const vals=Object.values(daily);
+  const minV=Math.min(...vals);
+  const maxV=Math.max(...vals);
+  const range=maxV-minV||1;
   const chart=document.getElementById('chart');
   chart.innerHTML=chartDates.map(date=>{
-    const v=daily[date];const h=(v/maxV)*100;const day=date.slice(8);
-    return `<div class="bar" style="height:${h}%"><div class="bar-tip">${date}: ${fmt(v)}</div><div class="bar-label">${day}</div></div>`;
+    const v=daily[date];
+    // Scale from 10% to 100% so small values are still visible
+    const h=10+((v-minV)/range)*90;
+    const day=date.slice(8);
+    return `<div class="bar" style="height:${h}%"><div class="bar-tip">${date}: ${fmt(v)} orders</div><div class="bar-label">${day}</div></div>`;
   }).join('');
 
   // Recent
@@ -298,29 +307,39 @@ function renderAll(){
   // Off table
   paginate(offList,1,15,items=>{
     document.querySelector('#tblOff tbody').innerHTML=items.map((m,i)=>`
-      <tr><td><span class="rank">${i+1}</span></td><td class="sticky-col"><strong>${m.biz}</strong></td><td><span class="pill">${m.kam}</span></td><td>${m.last}</td><td class="num" style="color:#ec4899;font-weight:700">${m.days}</td><td><span class="pill bad">Inactive</span></td></tr>
+      <tr><td><span class="rank">${i+1}</span></td><td class="sticky-col"><strong>${m.biz}</strong></td><td><span class="pill blue">${m.kam}</span></td><td>${m.last}</td><td class="num" style="color:#ec4899;font-weight:700">${m.days}</td><td><span class="pill bad">Inactive</span></td></tr>
     `).join('');
   },'pagOff');
 
-  // Business x Date
-  const md=[...data].sort((a,b)=>b.date.localeCompare(a.date)||b.biz.localeCompare(a.biz));
+  // Business x Date - NEW: business name + date-wise counts
+  const bizAgg={};
+  data.forEach(d=>{
+    if(!bizAgg[d.biz])bizAgg[d.biz]={biz:d.biz,bid:d.bid,kam:d.kam,dates:new Set(),proc:0,del:0,ret:0};
+    bizAgg[d.biz].dates.add(d.date);
+    bizAgg[d.biz].proc+=d.proc;
+    bizAgg[d.biz].del+=d.del;
+    bizAgg[d.biz].ret+=d.ret;
+  });
+  const allDates=[...new Set(data.map(d=>d.date))].sort();
+  const md=Object.values(bizAgg).sort((a,b)=>b.proc-a.proc);
   paginate(md,1,15,items=>{
-    document.querySelector('#tblMd tbody').innerHTML=items.map(d=>`
-      <tr><td class="sticky-col"><strong>${d.biz}</strong></td><td>${d.date}</td><td class="num">${d.proc}</td><td class="num">${d.del}</td><td><span class="pill ${+dr(d)>=90?'good':'bad'}">${dr(d)}%</span></td><td class="num">${d.ret}</td><td class="num">${bdt(d.cod)}</td><td class="num">${bdt(d.rvn)}</td></tr>
-    `).join('');
+    document.querySelector('#tblMd tbody').innerHTML=items.map(m=>{
+      const avgDr=m.proc>0?((m.del/m.proc)*100).toFixed(1):0;
+      return `<tr><td class="sticky-col"><strong>${m.biz}</strong></td><td>${m.bid}</td><td><span class="pill blue">${m.kam}</span></td><td class="num">${m.dates.size}</td><td class="num">${allDates.length}</td><td class="num">${fmt(m.proc)}</td><td class="num">${fmt(m.del)}</td><td><span class="pill ${+avgDr>=90?'good':'bad'}">${avgDr}%</span></td></tr>`;
+    }).join('');
   },'pagMd');
 
   // KAM Summary
   const kamD={};
   data.forEach(d=>{
-    if(!kamD[d.kam])kamD[d.kam]={bizs:new Set(),proc:0,del:0,ret:0,cod:0,rvn:0};
+    if(!kamD[d.kam])kamD[d.kam]={bizs:new Set(),proc:0,del:0,ret:0,cod:0,dc:0,rvn:0};
     kamD[d.kam].bizs.add(d.biz);
     kamD[d.kam].proc+=d.proc; kamD[d.kam].del+=d.del;
-    kamD[d.kam].ret+=d.ret; kamD[d.kam].cod+=d.cod; kamD[d.kam].rvn+=d.rvn;
+    kamD[d.kam].ret+=d.ret; kamD[d.kam].cod+=d.cod; kamD[d.kam].dc+=d.dc; kamD[d.kam].rvn+=d.rvn;
   });
   document.getElementById('kamBox').innerHTML=Object.entries(kamD).map(([kam,k])=>{
     const ratio=k.proc>0?((k.del/k.proc)*100).toFixed(2):0;
-    return `<div class="kam-card"><div class="kam-head"><div class="kam-av">${kam[0]}</div><div><div class="kam-name">${kam}</div><div class="kam-role">Key Account Manager</div></div></div><div class="kam-row"><div class="kam-stat"><div class="kam-stat-v">${k.bizs.size}</div><div class="kam-stat-l">Businesses</div></div><div class="kam-stat"><div class="kam-stat-v">${fmt(k.proc)}</div><div class="kam-stat-l">Processed</div></div><div class="kam-stat"><div class="kam-stat-v" style="color:#10b981">${ratio}%</div><div class="kam-stat-l">Delivery Rate</div></div><div class="kam-stat"><div class="kam-stat-v">${bdt(k.rvn)}</div><div class="kam-stat-l">Revenue</div></div></div></div>`;
+    return `<div class="kam-card"><div class="kam-head"><div class="kam-av">${kam[0]}</div><div><div class="kam-name">${kam}</div><div class="kam-role">Key Account Manager</div></div></div><div class="kam-row"><div class="kam-stat"><div class="kam-stat-v">${k.bizs.size}</div><div class="kam-stat-l">Businesses</div></div><div class="kam-stat"><div class="kam-stat-v">${fmt(k.proc)}</div><div class="kam-stat-l">Processed</div></div><div class="kam-stat"><div class="kam-stat-v" style="color:#10b981">${ratio}%</div><div class="kam-stat-l">Delivery Rate</div></div><div class="kam-stat"><div class="kam-stat-v">${bdt(k.dc)}</div><div class="kam-stat-l">Del. Charge</div></div><div class="kam-stat"><div class="kam-stat-v">${bdt(k.rvn)}</div><div class="kam-stat-l">Revenue</div></div></div></div>`;
   }).join('');
 
   // KAM x Date
@@ -334,7 +353,7 @@ function renderAll(){
   const kdRows=Object.values(kd).sort((a,b)=>b.date.localeCompare(a.date)||a.kam.localeCompare(b.kam));
   document.querySelector('#tblKd tbody').innerHTML=kdRows.map(d=>{
     const ratio=d.proc>0?((d.del/d.proc)*100).toFixed(2):0;
-    return `<tr><td>${d.date}</td><td><span class="pill">${d.kam}</span></td><td class="num">${d.bizs.size}</td><td class="num">${d.proc}</td><td class="num">${d.del}</td><td><span class="pill ${+ratio>=90?'good':'bad'}">${ratio}%</span></td><td class="num">${d.ret}</td><td class="num">${bdt(d.cod)}</td><td class="num">${bdt(d.rvn)}</td></tr>`;
+    return `<tr><td>${d.date}</td><td><span class="pill blue">${d.kam}</span></td><td class="num">${d.bizs.size}</td><td class="num">${d.proc}</td><td class="num">${d.del}</td><td><span class="pill ${+ratio>=90?'good':'bad'}">${ratio}%</span></td><td class="num">${d.ret}</td><td class="num">${bdt(d.cod)}</td><td class="num">${bdt(d.rvn)}</td></tr>`;
   }).join('');
 
   renderTop();
@@ -345,9 +364,9 @@ function renderTop(){
   const sortBy=document.getElementById('sortBy').value;
   const agg={};
   data.forEach(d=>{
-    if(!agg[d.biz])agg[d.biz]={biz:d.biz,bid:d.bid,kam:d.kam,proc:0,del:0,ret:0,cod:0,rvn:0};
+    if(!agg[d.biz])agg[d.biz]={biz:d.biz,bid:d.bid,kam:d.kam,proc:0,del:0,ret:0,cod:0,dc:0,rvn:0};
     agg[d.biz].proc+=d.proc; agg[d.biz].del+=d.del; agg[d.biz].ret+=d.ret;
-    agg[d.biz].cod+=d.cod; agg[d.biz].rvn+=d.rvn;
+    agg[d.biz].cod+=d.cod; agg[d.biz].dc+=d.dc; agg[d.biz].rvn+=d.rvn;
   });
   let arr=Object.values(agg);
   if(sortBy==='rvn')arr.sort((a,b)=>b.rvn-a.rvn);
@@ -358,7 +377,7 @@ function renderTop(){
   const top=arr.slice(0,10);
   document.getElementById('topBox').innerHTML=top.map((m,i)=>{
     const ratio=m.proc>0?((m.del/m.proc)*100).toFixed(1):0;
-    return `<div class="top-card"><div class="top-rank ${i<3?'gold':''}">${i+1}</div><div class="top-info"><div class="top-name">${m.biz}</div><div class="top-meta">ID: ${m.bid} · KAM: <span class="pill">${m.kam}</span></div></div><div class="top-stats"><div class="top-stat"><div class="top-val">${fmt(m.proc)}</div><div class="top-lab">Orders</div></div><div class="top-stat"><div class="top-val" style="color:#10b981">${ratio}%</div><div class="top-lab">Delivery</div></div><div class="top-stat"><div class="top-val">${bdt(m.rvn)}</div><div class="top-lab">Revenue</div></div><div class="top-stat"><div class="top-val">${bdt(m.cod)}</div><div class="top-lab">COD</div></div></div></div>`;
+    return `<div class="top-card"><div class="top-rank ${i<3?'gold':''}">${i+1}</div><div class="top-info"><div class="top-name">${m.biz}</div><div class="top-meta">ID: ${m.bid} · KAM: <span class="pill blue">${m.kam}</span></div></div><div class="top-stats"><div class="top-stat"><div class="top-val">${fmt(m.proc)}</div><div class="top-lab">Orders</div></div><div class="top-stat"><div class="top-val" style="color:#10b981">${ratio}%</div><div class="top-lab">Delivery</div></div><div class="top-stat"><div class="top-val">${bdt(m.rvn)}</div><div class="top-lab">Revenue</div></div><div class="top-stat"><div class="top-val">${bdt(m.cod)}</div><div class="top-lab">COD</div></div></div></div>`;
   }).join('');
 }
 
