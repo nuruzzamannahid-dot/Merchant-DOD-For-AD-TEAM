@@ -162,7 +162,7 @@
   button.b-btn.dismiss:hover{color:var(--text);}
 
   /* ---- Stat strip ---- */
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
   .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;
     box-shadow:var(--shadow-sm);transition:box-shadow .15s, transform .15s, border-color .15s;}
   .stat:hover{box-shadow:var(--shadow-md);border-color:var(--line-strong);}
@@ -441,6 +441,8 @@
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="store"></span><span class="lbl">Merchants tracked</span></div><div class="num" id="statTotal">–</div></div>
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Orders today</span></div><div class="num" id="statToday">–</div><span class="trend" id="statTodayTrend"></span></div>
       <div class="stat alertstat"><div class="stat-top"><span class="stat-icon" data-icon="alert"></span><span class="lbl">Off 2+ days</span></div><div class="num" id="statAlerts">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total COD</span></div><div class="num" id="statCod">–</div></div>
+      <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="bag"></span><span class="lbl">Total Revenue</span></div><div class="num" id="statRevenue">–</div></div>
       <div class="stat"><div class="stat-top"><span class="stat-icon" data-icon="sync"></span><span class="lbl">Last synced</span></div><div class="num" id="statSynced">–</div></div>
     </section>
 
@@ -553,6 +555,10 @@ function fmtDateTime(ts){
 }
 function fmtNum(n){
   return n ? n.toLocaleString() : String(n ?? '');
+}
+function fmtMoney(n){
+  n = Number(n) || 0;
+  return '৳' + Math.round(n).toLocaleString();
 }
 
 function isFlagged(orders){
@@ -780,7 +786,8 @@ async function loadData(){
     STATE.dates = json.dates || [];
     STATE.merchants = (json.merchants || []).map(m => ({
       ...m,
-      orders: normalizeOrders(m.orders, STATE.dates.length)
+      orders: normalizeOrders(m.orders, STATE.dates.length),
+      cod: normalizeOrders(m.cod, STATE.dates.length)
     }));
     STATE.lastSync = Date.now();
     STATE.hasData = true;
@@ -874,9 +881,19 @@ function renderDashboardInner(){
   const yestTotal = yestIdx >= 0 ? STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[yestIdx]) || 0), 0) : null;
   const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
 
+  // Sum of COD across every merchant, every day in the current date window.
+  // Total Revenue currently mirrors this — the sheet doesn't have a separate
+  // revenue column yet, so COD is being used as the revenue figure.
+  const totalCod = STATE.merchants.reduce((sum, m) => {
+    const codArr = safeOrders(m.cod);
+    return sum + codArr.reduce((s, v) => s + (Number(v) || 0), 0);
+  }, 0);
+
   document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
   document.getElementById('statToday').textContent = fmtNum(todayTotal);
   document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
+  document.getElementById('statCod').textContent = fmtMoney(totalCod);
+  document.getElementById('statRevenue').textContent = fmtMoney(totalCod);
   document.getElementById('statSynced').textContent = fmtDateTime(STATE.lastSync) || "–";
 
   // today trend vs yesterday
