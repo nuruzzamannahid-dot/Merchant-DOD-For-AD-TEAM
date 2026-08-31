@@ -787,7 +787,8 @@ async function loadData(){
     STATE.merchants = (json.merchants || []).map(m => ({
       ...m,
       orders: normalizeOrders(m.orders, STATE.dates.length),
-      cod: normalizeOrders(m.cod, STATE.dates.length)
+      cod: normalizeOrders(m.cod, STATE.dates.length),
+      revenue: normalizeOrders(m.revenue, STATE.dates.length)
     }));
     STATE.lastSync = Date.now();
     STATE.hasData = true;
@@ -881,19 +882,22 @@ function renderDashboardInner(){
   const yestTotal = yestIdx >= 0 ? STATE.merchants.reduce((sum,m) => sum + (Number(safeOrders(m.orders)[yestIdx]) || 0), 0) : null;
   const flagged = STATE.merchants.filter(m => isFlagged(m.orders));
 
-  // Sum of COD across every merchant, every day in the current date window.
-  // Total Revenue currently mirrors this — the sheet doesn't have a separate
-  // revenue column yet, so COD is being used as the revenue figure.
+  // Sum of COD, and sum of Revenue, across every merchant, every day in the
+  // current date window. These come from separate sheet columns (COD, Revenue).
   const totalCod = STATE.merchants.reduce((sum, m) => {
     const codArr = safeOrders(m.cod);
     return sum + codArr.reduce((s, v) => s + (Number(v) || 0), 0);
+  }, 0);
+  const totalRevenue = STATE.merchants.reduce((sum, m) => {
+    const revArr = safeOrders(m.revenue);
+    return sum + revArr.reduce((s, v) => s + (Number(v) || 0), 0);
   }, 0);
 
   document.getElementById('statTotal').textContent = fmtNum(STATE.merchants.length);
   document.getElementById('statToday').textContent = fmtNum(todayTotal);
   document.getElementById('statAlerts').textContent = fmtNum(flagged.length);
   document.getElementById('statCod').textContent = fmtMoney(totalCod);
-  document.getElementById('statRevenue').textContent = fmtMoney(totalCod);
+  document.getElementById('statRevenue').textContent = fmtMoney(totalRevenue);
   document.getElementById('statSynced').textContent = fmtDateTime(STATE.lastSync) || "–";
 
   // today trend vs yesterday
