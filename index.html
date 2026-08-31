@@ -28,29 +28,30 @@ nav.tabs .tab.active{color:#10b981;border-bottom-color:#10b981}
 .kpi-value.blue{color:#5b9cf6}
 .card{background:#1a1d27;border:1px solid #2a2e3b;border-radius:12px;padding:4px;margin-bottom:20px}
 .card-title{padding:14px 16px 4px;font-size:14px;font-weight:600;color:#fff}
-table{border-collapse:collapse;width:100%;font-size:13px}
-thead th{position:sticky;top:0;background:#0f1117;color:#5a6078;text-align:left;font-weight:600;padding:10px 12px;border-bottom:1px solid #2a2e3b;white-space:nowrap}
-tbody td{padding:9px 12px;border-bottom:1px solid #2a2e3b;white-space:nowrap}
-tbody tr:hover{background:rgba(255,255,255,0.03)}
-.table-scroll{max-height:560px;overflow:auto;border-radius:0 0 12px 12px}
-.num{text-align:right;font-variant-numeric:tabular-nums}
-.sticky-col{position:sticky;left:0;background:#1a1d27;z-index:2}
-thead .sticky-col{background:#0f1117;z-index:3}
-.rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#0f1117;color:#10b981;font-weight:700;font-size:12px;margin-right:8px}
+/* Calendar table */
+.cal-table{width:100%;border-collapse:collapse;font-size:12px}
+.cal-table th{background:#0f1117;color:#5a6078;font-weight:600;padding:8px 6px;border-bottom:1px solid #2a2e3b;border-right:1px solid #2a2e3b;text-align:center;white-space:nowrap;position:sticky;top:0;z-index:2}
+.cal-table th:first-child{position:sticky;left:0;z-index:3;background:#0f1117;text-align:left;padding-left:12px}
+.cal-table th:last-child{border-right:none;background:#0f1117;color:#10b981}
+.cal-table td{padding:6px 6px;border-bottom:1px solid #2a2e3b;border-right:1px solid #2a2e3b;text-align:center;white-space:nowrap}
+.cal-table td:first-child{position:sticky;left:0;background:#1a1d27;z-index:1;text-align:left;padding-left:12px;font-weight:600;border-right:1px solid #2a2e3b}
+.cal-table td:last-child{border-right:none;background:rgba(16,185,129,0.08);font-weight:700;color:#10b981}
+.cal-table tr:hover td{background:rgba(255,255,255,0.03)}
+.cal-table tr:hover td:first-child{background:#1a1d27}
+.cal-table tr:hover td:last-child{background:rgba(16,185,129,0.12)}
+.cell-zero{color:#5a6078}
+.cell-low{color:#f59e0b}
+.cell-high{color:#10b981}
+.cell-mid{color:#fff}
+.total-row td{background:rgba(16,185,129,0.1)!important;font-weight:700;color:#10b981}
+.total-row td:first-child{background:rgba(16,185,129,0.15)!important;color:#10b981}
 .pill{padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600}
 .pill.good{background:rgba(62,207,142,0.15);color:#10b981}
 .pill.bad{background:rgba(236,72,153,0.15);color:#ec4899}
 .pill.blue{background:rgba(59,130,246,0.15);color:#5b9cf6}
-.empty{padding:30px;text-align:center;color:#5a6078}
-.loading{padding:40px;text-align:center;color:#5a6078}
-.error-box{background:rgba(236,72,153,0.1);border:1px solid #ec4899;color:#ffb4d6;padding:14px 16px;border-radius:10px;margin-bottom:16px;font-size:13px}
-.chart-wrap{padding:16px}
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:220px;padding-bottom:28px;padding-left:4px;padding-right:4px}
-.bar{flex:1;background:#10b981;border-radius:4px 4px 0 0;min-height:4px;position:relative;transition:opacity .2s;cursor:pointer}
-.bar:hover{opacity:.7}
-.bar-label{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:#5a6078;white-space:nowrap}
-.bar-tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#0f1117;border:1px solid #2a2e3b;padding:4px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;margin-bottom:4px}
-.bar:hover .bar-tip{opacity:1}
+.table-scroll{max-height:600px;overflow:auto;border-radius:0 0 12px 12px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.rank{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#0f1117;color:#10b981;font-weight:700;font-size:12px;margin-right:8px}
 .top-card{display:flex;align-items:center;gap:14px;background:#1a1d27;border:1px solid #2a2e3b;border-radius:12px;padding:14px 16px;margin-bottom:10px;transition:all .2s}
 .top-card:hover{border-color:#10b981;transform:translateX(3px)}
 .top-rank{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:#0f1117;border:2px solid #10b981;color:#10b981}
@@ -75,6 +76,14 @@ thead .sticky-col{background:#0f1117;z-index:3}
 .pag button{background:#0f1117;border:1px solid #2a2e3b;color:#5a6078;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:12px}
 .pag button:hover{color:#fff;border-color:#10b981}
 .pag button.on{background:#10b981;color:#fff;border-color:#10b981}
+.error-box{background:rgba(236,72,153,0.1);border:1px solid #ec4899;color:#ffb4d6;padding:14px 16px;border-radius:10px;margin-bottom:16px;font-size:13px}
+.chart-wrap{padding:16px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:220px;padding-bottom:28px;padding-left:4px;padding-right:4px}
+.bar{flex:1;background:#10b981;border-radius:4px 4px 0 0;min-height:4px;position:relative;transition:opacity .2s;cursor:pointer}
+.bar:hover{opacity:.7}
+.bar-label{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-size:10px;color:#5a6078;white-space:nowrap}
+.bar-tip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#0f1117;border:1px solid #2a2e3b;padding:4px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;margin-bottom:4px}
+.bar:hover .bar-tip{opacity:1}
 </style>
 <base target="_blank">
 </head>
@@ -126,7 +135,7 @@ thead .sticky-col{background:#0f1117;z-index:3}
   <div class="card">
     <div class="card-title">Latest Transactions</div>
     <div class="table-scroll">
-      <table id="tblRecent"><thead><tr><th>Date</th><th>Business</th><th>Processed</th><th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th></tr></thead><tbody></tbody></table>
+      <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>Date</th><th>Business</th><th>Processed</th><th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th></tr></thead><tbody id="recentBody"></tbody></table>
     </div>
   </div>
 </div>
@@ -144,23 +153,23 @@ thead .sticky-col{background:#0f1117;z-index:3}
       <input type="text" placeholder="Search..." onkeyup="filter('tblOff',this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
     </div>
     <div class="table-scroll">
-      <table id="tblOff"><thead><tr><th>Rank</th><th>Business</th><th>KAM</th><th>Last Order</th><th>Days Off</th><th>Status</th></tr></thead><tbody></tbody></table>
+      <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>Rank</th><th>Business</th><th>KAM</th><th>Last Order</th><th>Days Off</th><th>Status</th></tr></thead><tbody id="offBody"></tbody></table>
     </div>
     <div class="pag" id="pagOff"></div>
   </div>
 </div>
 
-<!-- BUSINESS x DATE -->
+<!-- BUSINESS x DATE CALENDAR -->
 <div id="md" class="panel">
   <div class="card">
     <div style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
-      <span class="card-title" style="padding:0">Business × Date Count</span>
-      <input type="text" placeholder="Search business..." onkeyup="filter('tblMd',this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
+      <span class="card-title" style="padding:0">Business × Date Calendar</span>
+      <input type="text" placeholder="Search business..." onkeyup="filterCal(this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
     </div>
     <div class="table-scroll">
-      <table id="tblMd"><thead><tr><th>Business</th><th>Business ID</th><th>KAM</th><th>Dates Active</th><th>Total Days</th><th>Total Orders</th><th>Total Delivered</th><th>Avg Delivery %</th></tr></thead><tbody></tbody></table>
+      <table class="cal-table" id="calTable"><thead id="calHead"></thead><tbody id="calBody"></tbody></table>
     </div>
-    <div class="pag" id="pagMd"></div>
+    <div class="pag" id="pagCal"></div>
   </div>
 </div>
 
@@ -177,7 +186,7 @@ thead .sticky-col{background:#0f1117;z-index:3}
       <input type="text" placeholder="Search..." onkeyup="filter('tblKd',this.value)" style="background:#0f1117;border:1px solid #2a2e3b;border-radius:6px;padding:5px 10px;color:#fff;font-size:12px;width:180px;outline:none">
     </div>
     <div class="table-scroll">
-      <table id="tblKd"><thead><tr><th>Date</th><th>KAM</th><th>Businesses</th><th>Processed</th><th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th></tr></thead><tbody></tbody></table>
+      <table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>Date</th><th>KAM</th><th>Businesses</th><th>Processed</th><th>Delivered</th><th>Delivery %</th><th>Returned</th><th>COD</th><th>RVN</th></tr></thead><tbody id="kdBody"></tbody></table>
     </div>
   </div>
 </div>
@@ -279,7 +288,7 @@ function renderAll(){
   document.getElementById('off3').textContent=fmt(off3);
   document.getElementById('off7').textContent=fmt(off7);
 
-  // Chart - FIXED: use min-max scaling with proper baseline
+  // Chart
   const daily={};
   data.forEach(d=>{daily[d.date]=(daily[d.date]||0)+d.proc});
   const chartDates=Object.keys(daily).sort();
@@ -290,7 +299,6 @@ function renderAll(){
   const chart=document.getElementById('chart');
   chart.innerHTML=chartDates.map(date=>{
     const v=daily[date];
-    // Scale from 10% to 100% so small values are still visible
     const h=10+((v-minV)/range)*90;
     const day=date.slice(8);
     return `<div class="bar" style="height:${h}%"><div class="bar-tip">${date}: ${fmt(v)} orders</div><div class="bar-label">${day}</div></div>`;
@@ -298,7 +306,7 @@ function renderAll(){
 
   // Recent
   const recent=[...data].sort((a,b)=>b.date.localeCompare(a.date)||b.proc-a.proc).slice(0,20);
-  document.querySelector('#tblRecent tbody').innerHTML=recent.map(d=>{
+  document.getElementById('recentBody').innerHTML=recent.map(d=>{
     const ratio=dr(d);
     const cls=+ratio>=90?'good':(+ratio>=70?'':'bad');
     return `<tr><td>${d.date}</td><td><strong>${d.biz}</strong></td><td class="num">${d.proc}</td><td class="num">${d.del}</td><td><span class="pill ${cls}">${ratio}%</span></td><td class="num">${d.ret}</td><td class="num">${bdt(d.cod)}</td><td class="num">${bdt(d.rvn)}</td></tr>`;
@@ -306,28 +314,13 @@ function renderAll(){
 
   // Off table
   paginate(offList,1,15,items=>{
-    document.querySelector('#tblOff tbody').innerHTML=items.map((m,i)=>`
-      <tr><td><span class="rank">${i+1}</span></td><td class="sticky-col"><strong>${m.biz}</strong></td><td><span class="pill blue">${m.kam}</span></td><td>${m.last}</td><td class="num" style="color:#ec4899;font-weight:700">${m.days}</td><td><span class="pill bad">Inactive</span></td></tr>
+    document.getElementById('offBody').innerHTML=items.map((m,i)=>`
+      <tr><td><span class="rank">${i+1}</span></td><td style="position:sticky;left:0;background:#1a1d27;z-index:1"><strong>${m.biz}</strong></td><td><span class="pill blue">${m.kam}</span></td><td>${m.last}</td><td class="num" style="color:#ec4899;font-weight:700">${m.days}</td><td><span class="pill bad">Inactive</span></td></tr>
     `).join('');
   },'pagOff');
 
-  // Business x Date - NEW: business name + date-wise counts
-  const bizAgg={};
-  data.forEach(d=>{
-    if(!bizAgg[d.biz])bizAgg[d.biz]={biz:d.biz,bid:d.bid,kam:d.kam,dates:new Set(),proc:0,del:0,ret:0};
-    bizAgg[d.biz].dates.add(d.date);
-    bizAgg[d.biz].proc+=d.proc;
-    bizAgg[d.biz].del+=d.del;
-    bizAgg[d.biz].ret+=d.ret;
-  });
-  const allDates=[...new Set(data.map(d=>d.date))].sort();
-  const md=Object.values(bizAgg).sort((a,b)=>b.proc-a.proc);
-  paginate(md,1,15,items=>{
-    document.querySelector('#tblMd tbody').innerHTML=items.map(m=>{
-      const avgDr=m.proc>0?((m.del/m.proc)*100).toFixed(1):0;
-      return `<tr><td class="sticky-col"><strong>${m.biz}</strong></td><td>${m.bid}</td><td><span class="pill blue">${m.kam}</span></td><td class="num">${m.dates.size}</td><td class="num">${allDates.length}</td><td class="num">${fmt(m.proc)}</td><td class="num">${fmt(m.del)}</td><td><span class="pill ${+avgDr>=90?'good':'bad'}">${avgDr}%</span></td></tr>`;
-    }).join('');
-  },'pagMd');
+  // Business x Date CALENDAR
+  renderCalendar(data, dates);
 
   // KAM Summary
   const kamD={};
@@ -351,12 +344,70 @@ function renderAll(){
     kd[key].ret+=d.ret; kd[key].cod+=d.cod; kd[key].rvn+=d.rvn;
   });
   const kdRows=Object.values(kd).sort((a,b)=>b.date.localeCompare(a.date)||a.kam.localeCompare(b.kam));
-  document.querySelector('#tblKd tbody').innerHTML=kdRows.map(d=>{
+  document.getElementById('kdBody').innerHTML=kdRows.map(d=>{
     const ratio=d.proc>0?((d.del/d.proc)*100).toFixed(2):0;
     return `<tr><td>${d.date}</td><td><span class="pill blue">${d.kam}</span></td><td class="num">${d.bizs.size}</td><td class="num">${d.proc}</td><td class="num">${d.del}</td><td><span class="pill ${+ratio>=90?'good':'bad'}">${ratio}%</span></td><td class="num">${d.ret}</td><td class="num">${bdt(d.cod)}</td><td class="num">${bdt(d.rvn)}</td></tr>`;
   }).join('');
 
   renderTop();
+}
+
+function renderCalendar(data, dates) {
+  // Build calendar: rows = businesses, cols = dates, cells = processed count
+  const bizMap = {};
+  data.forEach(d => {
+    if (!bizMap[d.biz]) bizMap[d.biz] = { biz: d.biz, bid: d.bid, kam: d.kam, totals: {} };
+    bizMap[d.biz].totals[d.date] = (bizMap[d.biz].totals[d.date] || 0) + d.proc;
+  });
+
+  // Build header
+  let headHTML = '<tr><th>Business</th>';
+  dates.forEach(date => {
+    const day = parseInt(date.slice(8));
+    headHTML += `<th>Day ${day}</th>`;
+  });
+  headHTML += '<th>Total</th></tr>';
+  document.getElementById('calHead').innerHTML = headHTML;
+
+  // Build rows with pagination
+  const businesses = Object.values(bizMap).sort((a, b) => {
+    const totalA = Object.values(a.totals).reduce((s, v) => s + v, 0);
+    const totalB = Object.values(b.totals).reduce((s, v) => s + v, 0);
+    return totalB - totalA;
+  });
+
+  paginate(businesses, 1, 20, items => {
+    let bodyHTML = '';
+    // Data rows
+    items.forEach(b => {
+      const total = Object.values(b.totals).reduce((s, v) => s + v, 0);
+      let row = `<tr><td><strong>${b.biz}</strong><div style="font-size:10px;color:#5a6078">${b.kam}</div></td>`;
+      dates.forEach(date => {
+        const val = b.totals[date] || 0;
+        const cls = val === 0 ? 'cell-zero' : (val >= 10 ? 'cell-high' : (val >= 5 ? 'cell-mid' : 'cell-low'));
+        row += `<td class="${cls}">${val > 0 ? val : '-'}</td>`;
+      });
+      row += `<td>${fmt(total)}</td></tr>`;
+      bodyHTML += row;
+    });
+
+    // Total row
+    let totalRow = '<tr class="total-row"><td><strong>GRAND TOTAL</strong></td>';
+    dates.forEach(date => {
+      const dayTotal = data.filter(d => d.date === date).reduce((s, d) => s + d.proc, 0);
+      totalRow += `<td>${fmt(dayTotal)}</td>`;
+    });
+    const grandTotal = data.reduce((s, d) => s + d.proc, 0);
+    totalRow += `<td>${fmt(grandTotal)}</td></tr>`;
+    bodyHTML += totalRow;
+
+    document.getElementById('calBody').innerHTML = bodyHTML;
+  }, 'pagCal');
+}
+
+function filterCal(q) {
+  const rows = document.querySelectorAll('#calBody tr:not(.total-row)');
+  rows.forEach(r => r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none');
 }
 
 function renderTop(){
