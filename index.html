@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #151b26;
+      --panel-2: #1a212e;
+      --border: #262f3f;
+      --text: #e6e9ef;
+      --muted: #8b95a5;
+      --green: #3ecf8e;
+      --pink: #ec4899;
+      --blue: #5b9cf6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+    }
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 24px 28px 60px; }
+
+    header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    header h1 { font-size: 20px; margin: 0; font-weight: 600; }
+    .sub { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+    select, button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button:hover, select:hover { border-color: var(--green); }
+
+    nav.tabs {
+      display: flex;
+      gap: 22px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+      overflow-x: auto;
+    }
+    nav.tabs .tab {
+      padding: 10px 2px 12px;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    nav.tabs .tab.active { color: var(--green); border-bottom-color: var(--green); }
+    .badge {
+      background: var(--pink);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .kpi .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .kpi .value { font-size: 22px; font-weight: 700; }
+    .kpi .value.green { color: var(--green); }
+    .kpi .value.pink { color: var(--pink); }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .card-title { padding: 14px 16px 4px; font-size: 14px; font-weight: 600; color: var(--text); }
+
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    thead th {
+      position: sticky; top: 0;
+      background: var(--panel-2);
+      color: var(--muted);
+      text-align: left;
+      font-weight: 600;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .table-scroll { max-height: 560px; overflow: auto; border-radius: 0 0 12px 12px; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .sticky-col { position: sticky; left: 0; background: var(--panel); z-index: 2; }
+    thead .sticky-col { background: var(--panel-2); z-index: 3; }
+
+    .rank {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 6px;
+      background: var(--panel-2); color: var(--green); font-weight: 700; font-size: 12px;
+      margin-right: 8px;
+    }
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
+    .pill.good { background: rgba(62,207,142,0.15); color: var(--green); }
+    .pill.bad { background: rgba(236,72,153,0.15); color: var(--pink); }
+
+    .empty { padding: 30px; text-align: center; color: var(--muted); }
+    .loading { padding: 40px; text-align: center; color: var(--muted); }
+    .error-box { background: rgba(236,72,153,0.1); border: 1px solid var(--pink); color: #ffb4d6; padding: 14px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>DOD Dashboard</h1>
+        <div class="sub" id="metaLine">Loading…</div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <select id="rangeSelect">
+          <option value="7d">Last 7 days</option>
+          <option value="30d" selected>Last 30 days</option>
+          <option value="3m">Last 3 months</option>
+          <option value="all">All time</option>
+        </select>
+        <button id="refreshBtn">Refresh</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <div class="tab active" data-tab="dashboard">Dashboard</div>
+      <div class="tab" data-tab="off">Off 2+ Days <span class="badge" id="offBadge">0</span></div>
+      <div class="tab" data-tab="merchantDate">Merchant × Date</div>
+      <div class="tab" data-tab="kamSummary">KAM Summary</div>
+      <div class="tab" data-tab="kamDate">KAM × Date</div>
+      <div class="tab" data-tab="topMerchants">Top 10 Merchants</div>
+    </nav>
+
+    <div id="content" class="loading">Loading data from your DOD sheet…</div>
+  </div>
+
+  <script>
+    let state = null;
+    const tabs = document.querySelectorAll('.tab');
+    const content = document.getElementById('content');
+    const rangeSelect = document.getElementById('rangeSelect');
+    let activeTab = 'dashboard';
+
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      activeTab = t.dataset.tab;
+      render();
+    }));
+
+    rangeSelect.addEventListener('click', () => {});
+    rangeSelect.addEventListener('change', load);
+    document.getElementById('refreshBtn').addEventListener('click', load);
+
+    function fmt(n) {
+      return Math.round(n).toLocaleString();
+    }
+    function fmt1(n) {
+      return (Math.round(n * 10) / 10).toFixed(1);
+    }
+
+    function load() {
+      content.innerHTML = '<div class="loading">Loading data from your DOD sheet…</div>';
+      google.script.run
+        .withSuccessHandler(onData)
+        .withFailureHandler(onError)
+        .getDashboardData(rangeSelect.value);
+    }
+
+    function onError(err) {
+      content.innerHTML = '<div class="error-box">Could not load data: ' + (err.message || err) +
+        '<br><br>Check that this spreadsheet has a sheet tab named exactly "DOD" with headers in row 1.</div>';
+    }
+
+    function onData(data) {
+      state = data;
+      document.getElementById('metaLine').textContent =
+        data.meta.rowCount.toLocaleString() + ' rows · ' + data.meta.dateMin + ' – ' + data.meta.dateMax +
+        ' · Updated ' + data.meta.lastUpdated;
+      document.getElementById('offBadge').textContent = data.offMerchants.length;
+      render();
+    }
+
+    function render() {
+      if (!state) return;
+      if (activeTab === 'dashboard') renderDashboard();
+      else if (activeTab === 'off') renderOff();
+      else if (activeTab === 'merchantDate') renderMerchantDate();
+      else if (activeTab === 'kamSummary') renderKamSummary();
+      else if (activeTab === 'kamDate') renderKamDate();
+      else if (activeTab === 'topMerchants') renderTopMerchants();
+    }
+
+    function renderDashboard() {
+      const k = state.kpis;
+      content.innerHTML =
+        '<div class="kpi-grid">' +
+          kpiCard('Active Merchants', fmt(k.merchantCount)) +
+          kpiCard('Processed', fmt(k.processed)) +
+          kpiCard('Delivered', fmt(k.delivered)) +
+          kpiCard('Delivery Ratio', fmt1(k.deliveryRatio) + '%', 'green') +
+          kpiCard('Returned', fmt(k.returned)) +
+          kpiCard('Return Ratio', fmt1(k.returnRatio) + '%', k.returnRatio > 15 ? 'pink' : '') +
+          kpiCard('Delivery Charge', '৳' + fmt(k.charge)) +
+          kpiCard('COD Collected', '৳' + fmt(k.cod)) +
+          kpiCard('RVN', '৳' + fmt(k.rvn)) +
+          kpiCard('Merchants Off 2+ Days', fmt(state.offMerchants.length), 'pink') +
+        '</div>' +
+        '<div class="card"><div class="card-title">Top 5 Merchants (by processed volume, selected range)</div>' +
+        simpleTable(
+          ['Merchant', 'KAM', 'Processed', 'Delivered', 'Delivery Ratio'],
+          state.topMerchants.slice(0, 5).map(m => [
+            m.merchantName, m.kam, fmt(m.processed), fmt(m.delivered), fmt1(m.deliveryRatio) + '%'
+          ]),
+          [false, false, true, true, true]
+        ) +
+        '</div>';
+    }
+
+    function kpiCard(label, value, cls) {
+      return '<div class="kpi"><div class="label">' + label + '</div><div class="value ' + (cls || '') + '">' + value + '</div></div>';
+    }
+
+    function simpleTable(headers, rows, numCols) {
+      if (!rows.length) return '<div class="empty">No data for this range.</div>';
+      let h = '<div class="table-scroll"><table><thead><tr>';
+      headers.forEach((hd, i) => h += '<th' + (numCols[i] ? ' class="num"' : '') + '>' + hd + '</th>');
+      h += '</tr></thead><tbody>';
+      rows.forEach(r => {
+        h += '<tr>';
+        r.forEach((c, i) => h += '<td' + (numCols[i] ? ' class="num"' : '') + '>' + c + '</td>');
+        h += '</tr>';
+      });
+      h += '</tbody></table></div>';
+      return h;
+    }
+
+    function renderOff() {
+      const rows = state.offMerchants;
+      content.innerHTML = '<div class="card"><div class="card-title">Merchants inactive 2+ consecutive days (' + rows.length + ')</div>' +
+        simpleTable(
+          ['Merchant ID', 'Merchant', 'KAM Assigned', 'Days Off', 'Last Active'],
+          rows.map(r => [
+            r.merchantId,
+            r.merchantName,
+            r.kam,
+            '<span class="pill bad">' + r.offDays + '</span>',
+            r.lastActive
+          ]),
+          [true, false, false, true, false]
+        ) + '</div>';
+    }
+
+    function pivotTable(pivot, labelHeader, rowLabelFn) {
+      if (!pivot.rows.length) return '<div class="empty">No data for this range.</div>';
+      let h = '<div class="table-scroll"><table><thead><tr>';
+      h += '<th class="sticky-col">' + labelHeader + '</th>';
+      pivot.dates.forEach(d => h += '<th class="num">' + d.slice(5) + '</th>');
+      h += '<th class="num">Total</th></tr></thead><tbody>';
+      pivot.rows.forEach(r => {
+        h += '<tr><td class="sticky-col">' + rowLabelFn(r) + '</td>';
+        r.values.forEach(v => h += '<td class="num">' + (v ? fmt(v) : '<span style="color:var(--muted)">–</span>') + '</td>');
+        h += '<td class="num" style="font-weight:700;">' + fmt(r.total) + '</td></tr>';
+      });
+      h += '</tbody></table></div>';
+      return h;
+    }
+
+    function renderMerchantDate() {
+      content.innerHTML = '<div class="card"><div class="card-title">Processed orders — Merchant × Date</div>' +
+        pivotTable(state.merchantDate, 'Merchant', r => r.merchantName + '<br><span style="color:var(--muted);font-size:11px;">' + r.kam + '</span>') +
+        '</div>';
+    }
+
+    function renderKamDate() {
+      content.innerHTML = '<div class="card"><div class="card-title">Processed orders — KAM × Date</div>' +
+        pivotTable(state.kamDate, 'KAM', r => r.kam) +
+        '</div>';
+    }
+
+    function renderKamSummary() {
+      const rows = state.kamSummary;
+      content.innerHTML = '<div class="card"><div class="card-title">KAM Summary (selected range)</div>' +
+        simpleTable(
+          ['KAM', 'Merchants', 'Processed', 'Delivered', 'Delivery Ratio', 'Returned', 'Return Ratio', 'Delivery Charge', 'COD', 'RVN'],
+          rows.map(k => [
+            k.kam, fmt(k.merchantCount), fmt(k.processed), fmt(k.delivered),
+            fmt1(k.deliveryRatio) + '%', fmt(k.returned),
+            '<span class="pill ' + (k.returnRatio > 15 ? 'bad' : 'good') + '">' + fmt1(k.returnRatio) + '%</span>',
+            '৳' + fmt(k.charge), '৳' + fmt(k.cod), '৳' + fmt(k.rvn)
+          ]),
+          [false, true, true, true, true, true, true, true, true, true]
+        ) + '</div>';
+    }
+
+    function renderTopMerchants() {
+      const rows = state.topMerchants;
+      if (!rows.length) { content.innerHTML = '<div class="empty">No data for this range.</div>'; return; }
+      let h = '<div class="card"><div class="card-title">Top 10 Merchants by Processed Volume</div>' +
+        '<div class="table-scroll"><table><thead><tr><th>#</th><th>Merchant</th><th>KAM</th>' +
+        '<th class="num">Processed</th><th class="num">Delivered</th><th class="num">Delivery Ratio</th>' +
+        '<th class="num">Returned</th><th class="num">RVN</th></tr></thead><tbody>';
+      rows.forEach((m, i) => {
+        h += '<tr><td><span class="rank">' + (i + 1) + '</span></td><td>' + m.merchantName + '</td><td>' + m.kam +
+          '</td><td class="num">' + fmt(m.processed) + '</td><td class="num">' + fmt(m.delivered) +
+          '</td><td class="num">' + fmt1(m.deliveryRatio) + '%</td><td class="num">' + fmt(m.returned) +
+          '</td><td class="num">৳' + fmt(m.rvn) + '</td></tr>';
+      });
+      h += '</tbody></table></div></div>';
+      content.innerHTML = h;
+    }
+
+    load();
+  </script>
+</body>
+</html>
