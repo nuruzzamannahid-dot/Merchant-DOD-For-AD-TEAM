@@ -452,6 +452,16 @@
   .top-stats .tstat .lbl{display:block;font-size:10.5px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.03em;}
   @media (max-width:760px){ .top-row{flex-wrap:wrap;} .top-stats{width:100%;justify-content:space-between;} }
 
+  /* ---- Top Businesses sub-tabs ---- */
+  .subtabnav{display:flex;gap:2px;margin-bottom:16px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:3px;width:fit-content;}
+  .subtabbtn{background:none;border:none;color:var(--text-3);font-family:var(--font-display);font-weight:600;
+    font-size:12.5px;padding:7px 14px;border-radius:6px;cursor:pointer;transition:color .15s,background .15s;}
+  .subtabbtn:hover{color:var(--text);}
+  .subtabbtn.active{color:var(--text);background:var(--surface);box-shadow:var(--shadow-sm);}
+  .subtab-panel{display:none;}
+  .subtab-panel.active{display:block;}
+
   /* ---- Comparison tab ---- */
   .cmp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   @media (max-width:760px){ .cmp-stats{grid-template-columns:repeat(2,1fr);} }
@@ -781,16 +791,30 @@
 
   <!-- ===== Tab: Top Businesses ===== -->
   <div class="tab-panel" id="panel-top10" role="tabpanel" aria-labelledby="tab-top10">
-    <div class="matrix-toolbar top-toolbar">
-      <select id="topMetric" class="topmetric-select" aria-label="Sort by">
-        <option value="revenue">Total Revenue (RVN)</option>
-        <option value="orders">Total Orders</option>
-        <option value="cod">Total COD</option>
-        <option value="deliveryCharge">Total Delivery Charge</option>
-      </select>
-      <span class="hint" id="topHint"></span>
+    <div class="subtabnav" id="topSubNav" role="tablist" aria-label="Top Businesses views">
+      <button class="subtabbtn active" type="button" role="tab" aria-selected="true" data-subtab="leaderboard">Top Merchants</button>
+      <button class="subtabbtn" type="button" role="tab" aria-selected="false" data-subtab="shiftKam">Shift to KAM</button>
     </div>
-    <div class="top-list" id="topList"></div>
+
+    <div class="subtab-panel active" id="topSub-leaderboard">
+      <div class="matrix-toolbar top-toolbar">
+        <select id="topMetric" class="topmetric-select" aria-label="Sort by">
+          <option value="revenue">Total Revenue (RVN)</option>
+          <option value="orders">Total Orders</option>
+          <option value="cod">Total COD</option>
+          <option value="deliveryCharge">Total Delivery Charge</option>
+        </select>
+        <span class="hint" id="topHint"></span>
+      </div>
+      <div class="top-list" id="topList"></div>
+    </div>
+
+    <div class="subtab-panel" id="topSub-shiftKam">
+      <div class="matrix-toolbar top-toolbar">
+        <span class="hint" id="shiftKamHint"></span>
+      </div>
+      <div class="top-list" id="shiftKamList"></div>
+    </div>
   </div>
 
   <!-- ===== Tab: Comparison ===== -->
@@ -852,7 +876,7 @@ let STATE = {
   merchantSort: { col: 'name', dir: 0 },   // dir: 0=native, 1=asc, 2=desc
   kamSort: { col: 'name', dir: 0 },
   offThreshold: 2, offPage: 1,
-  topMetric: 'revenue', previousMonthLabel: null,
+  topMetric: 'revenue', previousMonthLabel: null, topSubTab: 'leaderboard',
   cmpMetric: 'orders', cmpPage: 1
 };
 
@@ -1443,9 +1467,35 @@ function renderActiveTab(tab){
   else if (tab === 'merchantMatrix') renderMerchantMatrix();
   else if (tab === 'kamSummary') renderKamSummary();
   else if (tab === 'kamMatrix') renderKamMatrix();
-  else if (tab === 'top10') renderTop10();
+  else if (tab === 'top10') renderTopSubTab();
   else if (tab === 'comparison') renderComparison();
 }
+
+/* ---------------- top businesses: sub-tab switching ---------------- */
+const TOP_SUBTABS = ['leaderboard', 'shiftKam'];
+
+function setTopSubTab(sub){
+  if (TOP_SUBTABS.indexOf(sub) === -1) sub = 'leaderboard';
+  STATE.topSubTab = sub;
+  document.querySelectorAll('#topSubNav .subtabbtn').forEach(b => {
+    const on = b.dataset.subtab === sub;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('#panel-top10 .subtab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'topSub-' + sub));
+  renderTopSubTab();
+}
+function renderTopSubTab(){
+  const sub = STATE.topSubTab || 'leaderboard';
+  if (sub === 'shiftKam') renderShiftToKam();
+  else renderTop10();
+}
+document.getElementById('topSubNav').addEventListener('click', e => {
+  const btn = e.target.closest('.subtabbtn');
+  if (!btn) return;
+  setTopSubTab(btn.dataset.subtab);
+});
 
 /* ---------------- flagged tab ---------------- */
 /* ---------------- off days tab ---------------- */
@@ -1761,6 +1811,52 @@ document.getElementById('topMetric').addEventListener('change', e => {
   STATE.topMetric = e.target.value;
   renderTop10();
 });
+
+/* ---------------- shift to KAM ---------------- */
+// Businesses that hit the threshold both this month and last month —
+// candidates to hand off to a dedicated KAM.
+const SHIFT_KAM_THRESHOLD = 150;
+
+function renderShiftToKam(){
+  const wrap = document.getElementById('shiftKamList');
+  try { renderShiftToKamInner(wrap); }
+  catch(err){ renderTabError(wrap.parentElement, err); }
+}
+function renderShiftToKamInner(wrap){
+  const hintEl = document.getElementById('shiftKamHint');
+  if (!STATE.merchants.length){ wrap.innerHTML = ''; hintEl.textContent = ''; return; }
+
+  if (!STATE.previousMonthLabel){
+    wrap.innerHTML = '';
+    hintEl.textContent = 'No prior-month data found — add a "LAST 3MONTH" tab in the sheet to enable this.';
+    return;
+  }
+
+  const prevShort = fmtMonthShort(STATE.previousMonthLabel) || 'Last month';
+
+  const rows = STATE.merchants.map(m => {
+    const currOrders = sumArr(m.orders);
+    const prevOrders = m.prev ? (Number(m.prev.orders) || 0) : 0;
+    return { m, currOrders, prevOrders };
+  })
+    .filter(r => r.m.prev && r.currOrders >= SHIFT_KAM_THRESHOLD && r.prevOrders >= SHIFT_KAM_THRESHOLD)
+    .sort((a, b) => (b.currOrders + b.prevOrders) - (a.currOrders + a.prevOrders));
+
+  hintEl.textContent = `${rows.length} business${rows.length === 1 ? '' : 'es'} with ${SHIFT_KAM_THRESHOLD}+ orders both this month and ${prevShort} — candidates to shift to a dedicated KAM.`;
+
+  wrap.innerHTML = rows.map((r, i) => `
+    <div class="top-row">
+      <div class="top-rank">${i + 1}</div>
+      <div class="top-meta">
+        <div class="name">${esc(r.m.businessName)}</div>
+        <div class="sub">ID: ${esc(r.m.businessId)} · KAM: <span class="kam-tag">${esc(r.m.assignedKam || 'Unassigned')}</span></div>
+      </div>
+      <div class="top-stats">
+        <div class="tstat"><span class="num">${fmtNum(r.currOrders)}</span><span class="lbl">This Month</span></div>
+        <div class="tstat"><span class="num">${fmtNum(r.prevOrders)}</span><span class="lbl">${esc(prevShort)}</span></div>
+      </div>
+    </div>`).join('') || '<div class="empty-state"><div class="big">No merchants match</div></div>';
+}
 
 /* ---------------- comparison tab ---------------- */
 const CMP_PAGE_SIZE = 15;
