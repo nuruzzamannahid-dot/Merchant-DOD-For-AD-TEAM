@@ -36,6 +36,13 @@ async function ensureSchema() {
       updated_at TEXT NOT NULL
     )
   `);
+  await turso.execute(`
+    CREATE TABLE IF NOT EXISTS merchant_marks (
+      business_id TEXT PRIMARY KEY,
+      note TEXT,
+      updated_at TEXT NOT NULL
+    )
+  `);
 }
 
 // The dashboard calls this same-origin endpoint. Data is read from
@@ -122,6 +129,43 @@ app.post('/api/ingest', async (req, res) => {
   } catch (err) {
     console.error('Ingest failed:', err);
     res.status(500).json({ error: 'Ingest failed', detail: String(err) });
+  }
+});
+
+// "Mark as potential" — shared across everyone viewing the dashboard.
+// GET returns every currently-marked business ID; POST sets/clears one mark.
+app.get('/api/marks', async (req, res) => {
+  try {
+    const result = await turso.execute('SELECT business_id FROM merchant_marks');
+    res.json({ businessIds: result.rows.map(r => String(r.business_id)) });
+  } catch (err) {
+    console.error('Fetching marks failed:', err);
+    res.status(500).json({ error: 'Fetching marks failed', detail: String(err) });
+  }
+});
+
+app.post('/api/marks', async (req, res) => {
+  try {
+    const businessId = req.body && req.body.businessId;
+    const marked = !!(req.body && req.body.marked);
+    if (typeof businessId === 'undefined' || businessId === null || businessId === '') {
+      return res.status(400).json({ error: 'businessId is required.' });
+    }
+    const id = String(businessId);
+
+    if (marked) {
+      await turso.execute({
+        sql: `INSERT INTO merchant_marks (business_id, updated_at) VALUES (?, ?)
+              ON CONFLICT(business_id) DO UPDATE SET updated_at = excluded.updated_at`,
+        args: [id, new Date().toISOString()]
+      });
+    } else {
+      await turso.execute({ sql: 'DELETE FROM merchant_marks WHERE business_id = ?', args: [id] });
+    }
+    res.json({ ok: true, businessId: id, marked });
+  } catch (err) {
+    console.error('Saving mark failed:', err);
+    res.status(500).json({ error: 'Saving mark failed', detail: String(err) });
   }
 });
 
