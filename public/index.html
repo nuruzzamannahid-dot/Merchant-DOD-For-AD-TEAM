@@ -7,15 +7,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
-  // Applied before first paint so returning dark-mode users don't see a
-  // flash of light mode. Light is the default for everyone else.
+  // Applied before first paint so there's no flash of the wrong theme.
+  // Modes: 'auto' (default) picks light/dim/dark from the clock;
+  // 'light' / 'dark' are explicit manual overrides from the toggle.
   (function(){
-    var theme = 'light';
+    function autoTheme(){
+      var h = new Date().getHours();
+      if (h >= 6 && h < 15) return 'light';   // morning – early afternoon
+      if (h >= 15 && h < 19) return 'dim';    // evening
+      return 'dark';                          // night
+    }
+    var mode = 'auto';
     try {
-      var saved = localStorage.getItem('merchantPulse:theme');
-      if (saved === 'dark') theme = 'dark';
-    } catch (e) { /* storage unavailable — fall back to default light */ }
+      var saved = localStorage.getItem('merchantPulse:themeMode');
+      if (saved === 'light' || saved === 'dark' || saved === 'auto') mode = saved;
+    } catch (e) { /* storage unavailable — fall back to auto */ }
+    var theme = mode === 'auto' ? autoTheme() : mode;
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme-mode', mode);
   })();
 </script>
 <style>
@@ -83,6 +92,33 @@
     --row-hover:rgba(255,255,255,0.02);
     --focus-ring:0 0 0 3px rgba(51,214,166,0.25);
   }
+  /* Evening — softer, warmer mid-point between light and dark. Used
+     automatically ~17:00–20:00, or whenever it's the computed theme. */
+  [data-theme="dim"]{
+    --bg:#20242E;
+    --surface:#282D3A;
+    --surface-2:#2E3444;
+    --surface-3:#363D4F;
+    --line:#3B4254;
+    --line-strong:#474F63;
+    --text:#EDEEF2;
+    --text-2:#B6BBC9;
+    --text-3:#8B92A4;
+    --text-4:#6D7488;
+    --accent:#2FC79A;
+    --accent-strong:#3FDBAC;
+    --accent-dim:#2A4A42;
+    --accent-bg:#233A34;
+    --alert:#F0637E;
+    --alert-strong:#F5849A;
+    --alert-dim:#4A2C36;
+    --alert-bg:#33232A;
+    --warn:#E3AC53;
+    --warn-dim:#42361F;
+    --bg-rgb:32,36,46;
+    --row-hover:rgba(255,255,255,0.025);
+    --focus-ring:0 0 0 3px rgba(47,199,154,0.22);
+  }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;
     font-size:14px;line-height:1.45;transition:background-color .15s ease, color .15s ease;}
@@ -144,7 +180,7 @@
   .banner.error{background:var(--alert-bg);border:1px solid var(--alert-dim);color:var(--alert-strong);}
   .banner.error strong{color:var(--alert-strong);}
   .banner.stale{background:var(--warn-dim);border:1px solid rgba(185,119,14,.3);color:#8a5c0a;}
-  [data-theme="dark"] .banner.stale{color:#f4c877;}
+  [data-theme="dark"] .banner.stale, [data-theme="dim"] .banner.stale{color:#f4c877;}
   .banner .b-action{flex-shrink:0;}
   button.b-btn{font-family:var(--font-body);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer;}
   button.b-btn.retry{background:var(--alert-strong);border:1px solid var(--alert-strong);color:#fff;}
@@ -182,7 +218,7 @@
   /* ---- Alert rail ---- */
   .alertbox{border:1px solid var(--alert-dim);background:linear-gradient(180deg, rgba(217,45,91,0.06), rgba(217,45,91,0.01));
     border-radius:var(--radius-lg);padding:14px 16px 8px;margin-bottom:22px;box-shadow:var(--shadow-sm);}
-  [data-theme="dark"] .alertbox{background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));}
+  [data-theme="dark"] .alertbox, [data-theme="dim"] .alertbox{background:linear-gradient(180deg, rgba(255,92,122,0.08), rgba(255,92,122,0.02));}
   .alertbox.empty{border-color:var(--line);background:var(--surface);}
   .alertbox h3{font-family:var(--font-display);font-size:13px;margin:0 0 10px;display:flex;align-items:center;gap:8px;
     color:var(--alert);text-transform:uppercase;letter-spacing:.05em;}
@@ -337,9 +373,9 @@
   .t10-rank.gold{background:#F7D774;color:#5C4300;}
   .t10-rank.silver{background:#D9DEE6;color:#3A4250;}
   .t10-rank.bronze{background:#E6BFA3;color:#5C3315;}
-  [data-theme="dark"] .t10-rank.gold{background:#8A6D1F;color:#FFE8A8;}
-  [data-theme="dark"] .t10-rank.silver{background:#4A5060;color:#E5E9F0;}
-  [data-theme="dark"] .t10-rank.bronze{background:#6B4326;color:#F3D2B8;}
+  [data-theme="dark"] .t10-rank.gold, [data-theme="dim"] .t10-rank.gold{background:#8A6D1F;color:#FFE8A8;}
+  [data-theme="dark"] .t10-rank.silver, [data-theme="dim"] .t10-rank.silver{background:#4A5060;color:#E5E9F0;}
+  [data-theme="dark"] .t10-rank.bronze, [data-theme="dim"] .t10-rank.bronze{background:#6B4326;color:#F3D2B8;}
   .miniflag{font-family:var(--font-mono);font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--alert-bg);
     color:var(--alert);border:1px solid var(--alert-dim);}
 
@@ -436,6 +472,14 @@
   .growth-pill.down{background:var(--alert-bg);color:var(--alert);}
   .growth-pill.flat{background:var(--surface-2);color:var(--text-3);}
   .growth-pill.new{background:var(--surface-2);color:var(--text-2);}
+
+  /* ---- Theme mode: Auto pill ---- */
+  .theme-auto-btn{font-family:var(--font-mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;
+    color:var(--text-3);background:var(--surface-2);border:1px solid var(--line);border-radius:20px;
+    padding:5px 9px;cursor:pointer;line-height:1;transition:color .15s, border-color .15s, background .15s;
+    flex-shrink:0;}
+  .theme-auto-btn:hover{color:var(--text);border-color:var(--line-strong);}
+  .theme-auto-btn.active{color:var(--accent-strong);background:var(--accent-bg);border-color:var(--accent-dim);}
 
   /* ---- Theme switch (Uiverse.io by njesenberger) ---- */
   .toggle-container {
@@ -626,6 +670,8 @@
         <span class="dot"></span><span>Refresh</span><span class="auto" id="autoLabel"></span>
       </button>
       <span class="synced-inline" id="syncedInline"></span>
+      <button class="theme-auto-btn" id="themeAutoBtn" type="button"
+        title="Auto theme: light in the morning, dim in the evening, dark at night">Auto</button>
       <label class="toggle-container" title="Toggle light/dark theme">
         <input class="toggle-input" id="themeToggle" type="checkbox" aria-label="Toggle light/dark theme">
         <div class="toggle-handle-wrapper">
@@ -791,6 +837,7 @@ const CONFIG = {
 
 const LS = {
   theme: 'merchantPulse:theme',
+  themeMode: 'merchantPulse:themeMode',
   search: 'merchantPulse:search',
   kam: 'merchantPulse:kam',
   collapsed: 'merchantPulse:collapsed',
@@ -1900,11 +1947,49 @@ document.getElementById('staleDismiss').addEventListener('click', () => {
   document.getElementById('staleBanner').classList.remove('show');
 });
 
+/* ---------------- theme (auto / light / dark) ----------------
+   Mode 'auto' (default) picks light/dim/dark from the clock:
+   6am–5pm light, 5–8pm dim, 8pm–6am dark. Toggling the switch sets
+   an explicit light/dark override that sticks until "Auto" is
+   clicked again. */
+function autoThemeNow(){
+  const h = new Date().getHours();
+  if (h >= 6 && h < 15) return 'light';
+  if (h >= 15 && h < 19) return 'dim';
+  return 'dark';
+}
+function getThemeMode(){
+  return lsGet(LS.themeMode, 'auto');
+}
+function applyThemeMode(mode){
+  const effective = mode === 'auto' ? autoThemeNow() : mode;
+  document.documentElement.setAttribute('data-theme', effective);
+  document.documentElement.setAttribute('data-theme-mode', mode);
+  lsSet(LS.themeMode, mode);
+  refreshThemeControls();
+  return effective;
+}
+function refreshThemeControls(){
+  const mode = getThemeMode();
+  const effective = document.documentElement.getAttribute('data-theme');
+  const autoBtn = document.getElementById('themeAutoBtn');
+  const toggle = document.getElementById('themeToggle');
+  autoBtn.classList.toggle('active', mode === 'auto');
+  autoBtn.textContent = mode === 'auto' ? 'Auto · ' + effective : 'Auto';
+  toggle.checked = effective !== 'light';
+}
 document.getElementById('themeToggle').addEventListener('change', e => {
-  const next = e.target.checked ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  lsSet(LS.theme, next);
+  // Manual flip always picks an explicit light/dark theme (leaving auto mode).
+  applyThemeMode(e.target.checked ? 'dark' : 'light');
 });
+document.getElementById('themeAutoBtn').addEventListener('click', () => {
+  applyThemeMode('auto');
+});
+// Keep the theme correct across the light→dim→dark clock boundaries
+// for anyone who leaves the dashboard open through the evening.
+setInterval(() => {
+  if (getThemeMode() === 'auto') applyThemeMode('auto');
+}, 60 * 1000);
 
 /* ---------------- boot ---------------- */
 (function restoreState(){
@@ -1920,8 +2005,7 @@ document.getElementById('themeToggle').addEventListener('change', e => {
   if (TABS.indexOf(tab) === -1) tab = lsGet(LS.tab, 'dashboard');
   setTab(tab, { noHash: true });
 
-  document.getElementById('themeToggle').checked =
-    document.documentElement.getAttribute('data-theme') === 'dark';
+  refreshThemeControls();
 })();
 
 // icon injection
