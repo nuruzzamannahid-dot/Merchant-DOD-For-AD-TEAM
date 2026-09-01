@@ -103,9 +103,13 @@ app.post('/api/ingest', async (req, res) => {
       if (typeof m.deliveryCharge !== 'undefined' && !Array.isArray(m.deliveryCharge)) {
         return res.status(400).json({ error: `Merchant ${m.businessId}'s deliveryCharge field must be an array if present.` });
       }
+      if (typeof m.prev !== 'undefined' && m.prev !== null && typeof m.prev !== 'object') {
+        return res.status(400).json({ error: `Merchant ${m.businessId}'s prev field must be an object or null if present.` });
+      }
     }
 
-    const payload = JSON.stringify({ dates, merchants });
+    const previousMonthLabel = typeof body.previousMonthLabel === 'string' ? body.previousMonthLabel : null;
+    const payload = JSON.stringify({ dates, merchants, previousMonthLabel });
     const updatedAt = new Date().toISOString();
 
     await turso.execute({
