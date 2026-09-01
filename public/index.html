@@ -433,6 +433,9 @@
   .cmp-stat .lbl{display:block;font-size:12px;color:var(--text-3);margin-bottom:8px;}
   .cmp-stat .num{display:block;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);}
   .cmp-stat .sub{display:block;font-size:11.5px;color:var(--text-3);margin-top:6px;}
+  .cmp-months{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:12px;color:var(--text-2);}
+  .cmp-months b{color:var(--text);font-weight:700;}
+  .kam-stat-box .cmp-line{display:block;font-size:10.5px;color:var(--text-3);margin-top:3px;font-family:var(--font-mono);}
   .growth-pill{display:inline-flex;align-items:center;gap:3px;border-radius:20px;padding:2px 9px;
     font-size:12px;font-weight:700;font-family:var(--font-mono);}
   .growth-pill.up{background:var(--accent-bg);color:var(--accent-strong);}
@@ -705,6 +708,14 @@ function fmtMonthLabel(key){
   if (parts.length < 2) return key;
   const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+// "2026-07" -> "Jul"
+function fmtMonthShort(key){
+  if (!key) return '';
+  const parts = String(key).split('-');
+  if (parts.length < 2) return key;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+  return d.toLocaleDateString(undefined, { month: 'short' });
 }
 // Returns { pct, html } — a growth/degrowth pill comparing curr vs prev.
 // prev === null/undefined means "no prior data" (new business).
@@ -1598,17 +1609,22 @@ function renderComparisonInner(){
   const currDeliveryRate = currTotals.orders ? (currTotals.delivered / currTotals.orders * 100) : 0;
   const prevDeliveryRate = prevTotals.orders ? (prevTotals.delivered / prevTotals.orders * 100) : 0;
 
+  const currMonthKey = STATE.dates.length ? String(STATE.dates[STATE.dates.length - 1]).slice(0, 7) : null;
+  const currShort = fmtMonthShort(currMonthKey) || 'This month';
+  const prevShort = fmtMonthShort(prevLabel) || 'Last month';
+
   const cards = [
-    { lbl: 'Orders', curr: fmtNum(currTotals.orders), g: growthPill(currTotals.orders, prevTotals.orders) },
-    { lbl: 'Delivery Rate', curr: currDeliveryRate.toFixed(1) + '%', g: growthPill(currDeliveryRate, prevDeliveryRate) },
-    { lbl: 'Revenue', curr: fmtMoney(currTotals.revenue), g: growthPill(currTotals.revenue, prevTotals.revenue) },
-    { lbl: 'COD', curr: fmtMoney(currTotals.cod), g: growthPill(currTotals.cod, prevTotals.cod) },
-    { lbl: 'Delivery Charge', curr: fmtMoney(currTotals.deliveryCharge), g: growthPill(currTotals.deliveryCharge, prevTotals.deliveryCharge) }
+    { lbl: 'Orders', curr: fmtNum(currTotals.orders), prev: fmtNum(prevTotals.orders), g: growthPill(currTotals.orders, prevTotals.orders) },
+    { lbl: 'Delivery Rate', curr: currDeliveryRate.toFixed(1) + '%', prev: prevDeliveryRate.toFixed(1) + '%', g: growthPill(currDeliveryRate, prevDeliveryRate) },
+    { lbl: 'Revenue', curr: fmtMoney(currTotals.revenue), prev: fmtMoney(prevTotals.revenue), g: growthPill(currTotals.revenue, prevTotals.revenue) },
+    { lbl: 'COD', curr: fmtMoney(currTotals.cod), prev: fmtMoney(prevTotals.cod), g: growthPill(currTotals.cod, prevTotals.cod) },
+    { lbl: 'Delivery Charge', curr: fmtMoney(currTotals.deliveryCharge), prev: fmtMoney(prevTotals.deliveryCharge), g: growthPill(currTotals.deliveryCharge, prevTotals.deliveryCharge) }
   ];
   document.getElementById('cmpStats').innerHTML = cards.map(c => `
     <div class="cmp-stat">
       <span class="lbl">${esc(c.lbl)}</span>
       <span class="num">${c.curr}</span>
+      <div class="cmp-months"><span>${esc(currShort)}: <b>${c.curr}</b></span><span>${esc(prevShort)}: <b>${c.prev}</b></span></div>
       <span class="sub">${c.g.html} vs last month</span>
     </div>`).join('');
 
@@ -1628,10 +1644,10 @@ function renderComparisonInner(){
           <div><span class="name">${esc(kam)}</span><span class="role">Key Account Manager</span></div>
         </div>
         <div class="kam-stat-grid">
-          <div class="kam-stat-box"><span class="num">${fmtNum(cOrders)}</span><span class="lbl">Orders ${growthPill(cOrders,pOrders).html}</span></div>
-          <div class="kam-stat-box"><span class="num">${fmtMoney(cRevenue)}</span><span class="lbl">Revenue ${growthPill(cRevenue,pRevenue).html}</span></div>
-          <div class="kam-stat-box"><span class="num">${fmtMoney(cCod)}</span><span class="lbl">COD ${growthPill(cCod,pCod).html}</span></div>
-          <div class="kam-stat-box"><span class="num">${fmtMoney(cCharge)}</span><span class="lbl">Del. Charge ${growthPill(cCharge,pCharge).html}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtNum(cOrders)}</span><span class="lbl">Orders ${growthPill(cOrders,pOrders).html}</span><span class="cmp-line">${esc(prevShort)}: ${fmtNum(pOrders)}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cRevenue)}</span><span class="lbl">Revenue ${growthPill(cRevenue,pRevenue).html}</span><span class="cmp-line">${esc(prevShort)}: ${fmtMoney(pRevenue)}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cCod)}</span><span class="lbl">COD ${growthPill(cCod,pCod).html}</span><span class="cmp-line">${esc(prevShort)}: ${fmtMoney(pCod)}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cCharge)}</span><span class="lbl">Del. Charge ${growthPill(cCharge,pCharge).html}</span><span class="cmp-line">${esc(prevShort)}: ${fmtMoney(pCharge)}</span></div>
           <div class="kam-stat-box"><span class="num">${fmtNum(list.length)}</span><span class="lbl">Businesses</span></div>
         </div>
       </div>`;
