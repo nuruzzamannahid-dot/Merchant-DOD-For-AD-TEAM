@@ -331,6 +331,19 @@
   table.matrix tfoot td:first-child{position:sticky;left:0;bottom:0;text-align:left;background:var(--surface-2);z-index:2;}
 
   .matrix-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;}
+  .marked-only-toggle{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;
+    white-space:nowrap;flex-shrink:0;}
+  .marked-only-toggle input{accent-color:var(--accent);cursor:pointer;}
+  .mark-star{background:none;border:none;cursor:pointer;font-size:14px;line-height:1;color:var(--text-4);
+    padding:0;margin-right:6px;vertical-align:middle;transition:color .15s, transform .12s;}
+  .mark-star:hover{color:var(--warn);transform:scale(1.2);}
+  .mark-star.active{color:var(--warn);}
+  .csv-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text-2);border-radius:var(--radius-sm);
+    padding:7px 14px;font-size:12.5px;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0;
+    transition:border-color .15s, color .15s;}
+  .csv-btn:hover{color:var(--text);border-color:var(--line-strong);}
+  .csv-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .csv-btn:disabled:hover{color:var(--text-2);border-color:var(--line);}
   .matrix-toolbar .hint{font-size:12px;color:var(--text-4);}
 
   /* ---- KAM summary table ---- */
@@ -768,7 +781,10 @@
   <!-- ===== Tab: Merchant x Date matrix ===== -->
   <div class="tab-panel" id="panel-merchantMatrix" role="tabpanel" aria-labelledby="tab-merchantMatrix">
     <div class="matrix-toolbar">
-      <span class="hint">Order count per merchant, per day. Click any column header to sort. Scroll to see the full date range.</span>
+      <span class="hint">Order count per merchant, per day. Click any column header to sort. Scroll to see the full date range. Click the star to mark a business as potential — shared with everyone viewing this dashboard.</span>
+      <label class="marked-only-toggle">
+        <input type="checkbox" id="markedOnlyFilter"> Show marked only
+      </label>
     </div>
     <div class="matrix-wrap"><table class="matrix" id="merchantMatrixTable"></table></div>
   </div>
@@ -812,6 +828,7 @@
     <div class="subtab-panel" id="topSub-shiftKam">
       <div class="matrix-toolbar top-toolbar">
         <span class="hint" id="shiftKamHint"></span>
+        <button class="csv-btn" id="shiftKamCsvBtn" type="button">Download CSV</button>
       </div>
       <div class="top-list" id="shiftKamList"></div>
     </div>
@@ -877,7 +894,8 @@ let STATE = {
   kamSort: { col: 'name', dir: 0 },
   offThreshold: 2, offPage: 1,
   topMetric: 'revenue', previousMonthLabel: null, topSubTab: 'leaderboard',
-  cmpMetric: 'orders', cmpPage: 1
+  cmpMetric: 'orders', cmpPage: 1,
+  marks: new Set(), markedOnly: false
 };
 
 /* ---------------- helpers ---------------- */
@@ -988,6 +1006,41 @@ function esc(str){
   return String(str ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[c]));
+}
+
+/* ---------------- mark as potential (shared via server) ---------------- */
+async function toggleMark(businessId){
+  const id = String(businessId);
+  const wasMarked = STATE.marks.has(id);
+  const nextMarked = !wasMarked;
+  if (nextMarked) STATE.marks.add(id); else STATE.marks.delete(id);
+  renderMerchantMatrix(); // optimistic — update the UI immediately
+  try {
+    const res = await fetch('/api/marks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ businessId: id, marked: nextMarked })
+    });
+    if (!res.ok) throw new Error('Save failed: ' + res.status);
+  } catch(err){
+    console.error('Could not save mark, reverting:', err);
+    if (nextMarked) STATE.marks.delete(id); else STATE.marks.add(id);
+    renderMerchantMatrix();
+  }
+}
+
+/* ---------------- CSV export ---------------- */
+function downloadCsv(filename, rows){
+  const csv = rows.map(r => r.map(v => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function renderTabError(el, err){
@@ -1204,6 +1257,13 @@ async function loadData(){
     STATE.lastSync = Date.now();
     STATE.hasData = true;
     STATE.loading = false;
+    try {
+      const marksRes = await fetch('/api/marks', { cache: 'no-store' });
+      if (marksRes.ok){
+        const marksJson = await marksRes.json();
+        STATE.marks = new Set((marksJson.businessIds || []).map(String));
+      }
+    } catch(e){ /* marks are non-critical — leave whatever we had */ }
     document.getElementById('emptyState').style.display = 'none';
     document.getElementById('legendRow').style.display = '';
     const flaggedCount = STATE.merchants.filter(m => isFlagged(m.orders)).length;
@@ -1616,11 +1676,13 @@ function renderMerchantMatrixInner(table){
   const dates = STATE.dates;
   const s = STATE.merchantSort;
 
-  const rows = getFilteredPool().map(m => {
-    const values = safeOrders(m.orders);
-    return { m, name: m.businessName, values,
-      total: values.reduce((a,v) => a + (Number(v) || 0), 0) };
-  });
+  const rows = getFilteredPool()
+    .filter(m => !STATE.markedOnly || STATE.marks.has(String(m.businessId)))
+    .map(m => {
+      const values = safeOrders(m.orders);
+      return { m, name: m.businessName, values,
+        total: values.reduce((a,v) => a + (Number(v) || 0), 0) };
+    });
   const sorted = sortRows(rows, s, dates);
 
   const thead = `<thead><tr>
@@ -1644,7 +1706,8 @@ function renderMerchantMatrixInner(table){
       return `<td class="${cls}" data-cell data-matrix="merchant" data-r="${r}" data-c="${i}">${shown}</td>`;
     }).join('');
     grandTotal += rowTotal;
-    return `<tr data-name="${esc(m.businessName)}" data-id="${esc(m.businessId)}"><td>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
+    const isMarked = STATE.marks.has(String(m.businessId));
+    return `<tr data-name="${esc(m.businessName)}" data-id="${esc(m.businessId)}"><td><button class="mark-star ${isMarked ? 'active' : ''}" type="button" data-mark-id="${esc(m.businessId)}" title="${isMarked ? 'Unmark' : 'Mark as potential'}" aria-label="Mark as potential">${isMarked ? '★' : '☆'}</button>${esc(m.businessName)}<br><span class="mid">#${esc(m.businessId)}</span></td>${cells}<td class="rowtotal">${rowTotal}</td></tr>`;
   }).join('');
 
   const tfoot = `<tfoot><tr>
@@ -1817,6 +1880,17 @@ document.getElementById('topMetric').addEventListener('change', e => {
 // candidates to hand off to a dedicated KAM.
 const SHIFT_KAM_THRESHOLD = 150;
 
+function computeShiftKamRows(){
+  if (!STATE.previousMonthLabel) return [];
+  return STATE.merchants.map(m => {
+    const currOrders = sumArr(m.orders);
+    const prevOrders = m.prev ? (Number(m.prev.orders) || 0) : 0;
+    return { m, currOrders, prevOrders };
+  })
+    .filter(r => r.m.prev && r.currOrders >= SHIFT_KAM_THRESHOLD && r.prevOrders >= SHIFT_KAM_THRESHOLD)
+    .sort((a, b) => (b.currOrders + b.prevOrders) - (a.currOrders + a.prevOrders));
+}
+
 function renderShiftToKam(){
   const wrap = document.getElementById('shiftKamList');
   try { renderShiftToKamInner(wrap); }
@@ -1824,23 +1898,19 @@ function renderShiftToKam(){
 }
 function renderShiftToKamInner(wrap){
   const hintEl = document.getElementById('shiftKamHint');
-  if (!STATE.merchants.length){ wrap.innerHTML = ''; hintEl.textContent = ''; return; }
+  const csvBtn = document.getElementById('shiftKamCsvBtn');
+  if (!STATE.merchants.length){ wrap.innerHTML = ''; hintEl.textContent = ''; csvBtn.disabled = true; return; }
 
   if (!STATE.previousMonthLabel){
     wrap.innerHTML = '';
     hintEl.textContent = 'No prior-month data found — add a "LAST 3MONTH" tab in the sheet to enable this.';
+    csvBtn.disabled = true;
     return;
   }
 
   const prevShort = fmtMonthShort(STATE.previousMonthLabel) || 'Last month';
-
-  const rows = STATE.merchants.map(m => {
-    const currOrders = sumArr(m.orders);
-    const prevOrders = m.prev ? (Number(m.prev.orders) || 0) : 0;
-    return { m, currOrders, prevOrders };
-  })
-    .filter(r => r.m.prev && r.currOrders >= SHIFT_KAM_THRESHOLD && r.prevOrders >= SHIFT_KAM_THRESHOLD)
-    .sort((a, b) => (b.currOrders + b.prevOrders) - (a.currOrders + a.prevOrders));
+  const rows = computeShiftKamRows();
+  csvBtn.disabled = rows.length === 0;
 
   hintEl.textContent = `${rows.length} business${rows.length === 1 ? '' : 'es'} with ${SHIFT_KAM_THRESHOLD}+ orders both this month and ${prevShort} — candidates to shift to a dedicated KAM.`;
 
@@ -1857,6 +1927,15 @@ function renderShiftToKamInner(wrap){
       </div>
     </div>`).join('') || '<div class="empty-state"><div class="big">No merchants match</div></div>';
 }
+
+document.getElementById('shiftKamCsvBtn').addEventListener('click', () => {
+  const rows = computeShiftKamRows();
+  if (!rows.length) return;
+  const prevShort = fmtMonthShort(STATE.previousMonthLabel) || 'Last Month';
+  const header = ['Rank', 'Business Name', 'Business ID', 'KAM', 'This Month Orders', prevShort + ' Orders'];
+  const body = rows.map((r, i) => [i + 1, r.m.businessName, r.m.businessId, r.m.assignedKam || 'Unassigned', r.currOrders, r.prevOrders]);
+  downloadCsv('shift-to-kam-candidates.csv', [header, ...body]);
+});
 
 /* ---------------- comparison tab ---------------- */
 const CMP_PAGE_SIZE = 15;
@@ -2038,6 +2117,16 @@ document.getElementById('kamFilter').addEventListener('change', () => {
   renderActiveTab();
 });
 document.getElementById('refreshBtn').addEventListener('click', loadData);
+
+document.getElementById('merchantMatrixTable').addEventListener('click', e => {
+  const star = e.target.closest('.mark-star');
+  if (!star) return;
+  toggleMark(star.dataset.markId);
+});
+document.getElementById('markedOnlyFilter').addEventListener('change', e => {
+  STATE.markedOnly = e.target.checked;
+  renderMerchantMatrix();
+});
 document.getElementById('retryBtn').addEventListener('click', loadData);
 document.getElementById('staleDismiss').addEventListener('click', () => {
   document.getElementById('staleBanner').classList.remove('show');
