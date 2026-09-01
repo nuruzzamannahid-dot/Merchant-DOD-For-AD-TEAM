@@ -425,6 +425,21 @@
   .top-stats .tstat .lbl{display:block;font-size:10.5px;color:var(--text-3);margin-top:2px;text-transform:uppercase;letter-spacing:.03em;}
   @media (max-width:760px){ .top-row{flex-wrap:wrap;} .top-stats{width:100%;justify-content:space-between;} }
 
+  /* ---- Comparison tab ---- */
+  .cmp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  @media (max-width:760px){ .cmp-stats{grid-template-columns:repeat(2,1fr);} }
+  .cmp-stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:16px 18px;box-shadow:var(--shadow-sm);}
+  .cmp-stat .lbl{display:block;font-size:12px;color:var(--text-3);margin-bottom:8px;}
+  .cmp-stat .num{display:block;font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);}
+  .cmp-stat .sub{display:block;font-size:11.5px;color:var(--text-3);margin-top:6px;}
+  .growth-pill{display:inline-flex;align-items:center;gap:3px;border-radius:20px;padding:2px 9px;
+    font-size:12px;font-weight:700;font-family:var(--font-mono);}
+  .growth-pill.up{background:var(--accent-bg);color:var(--accent-strong);}
+  .growth-pill.down{background:var(--alert-bg);color:var(--alert);}
+  .growth-pill.flat{background:var(--surface-2);color:var(--text-3);}
+  .growth-pill.new{background:var(--surface-2);color:var(--text-2);}
+
   /* ---- Tooltip ---- */
   .tip{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;
     box-shadow:var(--shadow-lg);padding:10px 12px;min-width:160px;max-width:240px;pointer-events:none;
@@ -502,6 +517,7 @@
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamSummary" id="tab-kamSummary">KAM Summary</button>
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="kamMatrix" id="tab-kamMatrix">KAM × Date</button>
     <button class="tabbtn" role="tab" aria-selected="false" data-tab="top10" id="tab-top10">Top Businesses</button>
+    <button class="tabbtn" role="tab" aria-selected="false" data-tab="comparison" id="tab-comparison">Comparison</button>
   </nav>
 
   <div class="empty-state" id="emptyState" style="display:none;">
@@ -588,6 +604,31 @@
     <div class="top-list" id="topList"></div>
   </div>
 
+  <!-- ===== Tab: Comparison ===== -->
+  <div class="tab-panel" id="panel-comparison" role="tabpanel" aria-labelledby="tab-comparison">
+    <div class="matrix-toolbar top-toolbar">
+      <span class="hint" id="cmpHint">This month vs last month</span>
+    </div>
+    <div class="cmp-stats" id="cmpStats"></div>
+    <div class="kam-cards" id="cmpKamCards" style="margin-top:18px;"></div>
+    <section class="off-list-card" style="margin-top:18px;">
+      <div class="off-list-head">
+        <h3>Business-wise Growth</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select id="cmpMetric" class="topmetric-select" aria-label="Metric">
+            <option value="orders">Orders</option>
+            <option value="revenue">Revenue</option>
+            <option value="cod">COD</option>
+            <option value="deliveryCharge">Delivery Charge</option>
+          </select>
+          <input type="search" id="cmpSearch" class="off-search" placeholder="Search…" aria-label="Search businesses">
+        </div>
+      </div>
+      <div class="matrix-wrap"><table class="off-table" id="cmpTable"></table></div>
+      <div class="pagination" id="cmpPagination"></div>
+    </section>
+  </div>
+
   <footer id="footNote">BEEACON · reads live from AD TEAM DATA</footer>
 </div>
 
@@ -621,7 +662,8 @@ let STATE = {
   merchantSort: { col: 'name', dir: 0 },   // dir: 0=native, 1=asc, 2=desc
   kamSort: { col: 'name', dir: 0 },
   offThreshold: 2, offPage: 1,
-  topMetric: 'revenue'
+  topMetric: 'revenue', previousMonthLabel: null,
+  cmpMetric: 'orders', cmpPage: 1
 };
 
 /* ---------------- helpers ---------------- */
@@ -655,6 +697,31 @@ function fmtNum(n){
 function fmtMoney(n){
   n = Number(n) || 0;
   return '৳' + Math.round(n).toLocaleString();
+}
+// "2026-07" -> "July 2026"
+function fmtMonthLabel(key){
+  if (!key) return '';
+  const parts = String(key).split('-');
+  if (parts.length < 2) return key;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+// Returns { pct, html } — a growth/degrowth pill comparing curr vs prev.
+// prev === null/undefined means "no prior data" (new business).
+function growthPill(curr, prev){
+  curr = Number(curr) || 0;
+  if (prev === null || typeof prev === 'undefined'){
+    return { pct: null, html: '<span class="growth-pill new">New</span>' };
+  }
+  prev = Number(prev) || 0;
+  if (prev === 0){
+    if (curr === 0) return { pct: 0, html: '<span class="growth-pill flat">0%</span>' };
+    return { pct: null, html: '<span class="growth-pill new">New</span>' };
+  }
+  const pct = ((curr - prev) / prev) * 100;
+  const cls = pct > 0.05 ? 'up' : pct < -0.05 ? 'down' : 'flat';
+  const arrow = cls === 'up' ? '▲' : cls === 'down' ? '▼' : '';
+  return { pct: pct, html: `<span class="growth-pill ${cls}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>` };
 }
 
 function isFlagged(orders){
@@ -902,13 +969,15 @@ async function loadData(){
     if (!res.ok) throw new Error('Server returned ' + res.status);
     const json = await res.json();
     STATE.dates = json.dates || [];
+    STATE.previousMonthLabel = json.previousMonthLabel || null;
     STATE.merchants = (json.merchants || []).map(m => ({
       ...m,
       orders: normalizeOrders(m.orders, STATE.dates.length),
       delivered: normalizeOrders(m.delivered, STATE.dates.length),
       cod: normalizeOrders(m.cod, STATE.dates.length),
       deliveryCharge: normalizeOrders(m.deliveryCharge, STATE.dates.length),
-      revenue: normalizeOrders(m.revenue, STATE.dates.length)
+      revenue: normalizeOrders(m.revenue, STATE.dates.length),
+      prev: (m.prev && typeof m.prev === 'object') ? m.prev : null
     }));
     STATE.lastSync = Date.now();
     STATE.hasData = true;
@@ -1127,7 +1196,7 @@ function renderDashboardInner(){
 }
 
 /* ---------------- tab switching ---------------- */
-const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix','top10'];
+const TABS = ['dashboard','flagged','merchantMatrix','kamSummary','kamMatrix','top10','comparison'];
 
 function activeTab(){
   return (document.querySelector('.tabbtn.active') || {}).dataset?.tab || 'dashboard';
@@ -1176,6 +1245,7 @@ function renderActiveTab(tab){
   else if (tab === 'kamSummary') renderKamSummary();
   else if (tab === 'kamMatrix') renderKamMatrix();
   else if (tab === 'top10') renderTop10();
+  else if (tab === 'comparison') renderComparison();
 }
 
 /* ---------------- flagged tab ---------------- */
@@ -1491,6 +1561,145 @@ function renderTop10Inner(wrap){
 document.getElementById('topMetric').addEventListener('change', e => {
   STATE.topMetric = e.target.value;
   renderTop10();
+});
+
+/* ---------------- comparison tab ---------------- */
+const CMP_PAGE_SIZE = 15;
+const CMP_METRIC_LABELS = { orders: 'Orders', revenue: 'Revenue', cod: 'COD', deliveryCharge: 'Delivery Charge' };
+const CMP_MONEY_METRICS = { revenue: true, cod: true, deliveryCharge: true };
+
+function renderComparison(){
+  const wrap = document.getElementById('panel-comparison');
+  try { renderComparisonInner(); }
+  catch(err){ renderTabError(wrap, err); }
+}
+function renderComparisonInner(){
+  const prevLabel = STATE.previousMonthLabel;
+  document.getElementById('cmpHint').textContent = prevLabel
+    ? `This month vs ${fmtMonthLabel(prevLabel)} (same businesses only)`
+    : 'No prior-month data found — add a "LAST 3MONTH" tab in the sheet to enable this.';
+
+  if (!STATE.merchants.length){
+    document.getElementById('cmpStats').innerHTML = '';
+    document.getElementById('cmpKamCards').innerHTML = '';
+    document.getElementById('cmpTable').innerHTML = '';
+    document.getElementById('cmpPagination').innerHTML = '';
+    return;
+  }
+
+  // Only merchants with prior-month data count toward "same businesses" totals.
+  const withPrev = STATE.merchants.filter(m => m.prev);
+  const metrics = ['orders', 'delivered', 'cod', 'deliveryCharge', 'revenue'];
+  const currTotals = {}, prevTotals = {};
+  metrics.forEach(f => {
+    currTotals[f] = withPrev.reduce((s, m) => s + sumArr(m[f]), 0);
+    prevTotals[f] = withPrev.reduce((s, m) => s + (Number(m.prev[f]) || 0), 0);
+  });
+  const currDeliveryRate = currTotals.orders ? (currTotals.delivered / currTotals.orders * 100) : 0;
+  const prevDeliveryRate = prevTotals.orders ? (prevTotals.delivered / prevTotals.orders * 100) : 0;
+
+  const cards = [
+    { lbl: 'Orders', curr: fmtNum(currTotals.orders), g: growthPill(currTotals.orders, prevTotals.orders) },
+    { lbl: 'Delivery Rate', curr: currDeliveryRate.toFixed(1) + '%', g: growthPill(currDeliveryRate, prevDeliveryRate) },
+    { lbl: 'Revenue', curr: fmtMoney(currTotals.revenue), g: growthPill(currTotals.revenue, prevTotals.revenue) },
+    { lbl: 'COD', curr: fmtMoney(currTotals.cod), g: growthPill(currTotals.cod, prevTotals.cod) },
+    { lbl: 'Delivery Charge', curr: fmtMoney(currTotals.deliveryCharge), g: growthPill(currTotals.deliveryCharge, prevTotals.deliveryCharge) }
+  ];
+  document.getElementById('cmpStats').innerHTML = cards.map(c => `
+    <div class="cmp-stat">
+      <span class="lbl">${esc(c.lbl)}</span>
+      <span class="num">${c.curr}</span>
+      <span class="sub">${c.g.html} vs last month</span>
+    </div>`).join('');
+
+  // Per-KAM breakdown
+  const groups = buildGroups(withPrev);
+  document.getElementById('cmpKamCards').innerHTML = Object.keys(groups).sort().map(kam => {
+    const list = groups[kam];
+    const cOrders = sumField(list, 'orders'), pOrders = list.reduce((s,m)=>s+(Number(m.prev.orders)||0),0);
+    const cRevenue = sumField(list, 'revenue'), pRevenue = list.reduce((s,m)=>s+(Number(m.prev.revenue)||0),0);
+    const cCod = sumField(list, 'cod'), pCod = list.reduce((s,m)=>s+(Number(m.prev.cod)||0),0);
+    const cCharge = sumField(list, 'deliveryCharge'), pCharge = list.reduce((s,m)=>s+(Number(m.prev.deliveryCharge)||0),0);
+    const initial = esc((kam || '?').trim().charAt(0).toUpperCase() || '?');
+    return `
+      <div class="kam-card">
+        <div class="kam-card-head">
+          <div class="kam-avatar">${initial}</div>
+          <div><span class="name">${esc(kam)}</span><span class="role">Key Account Manager</span></div>
+        </div>
+        <div class="kam-stat-grid">
+          <div class="kam-stat-box"><span class="num">${fmtNum(cOrders)}</span><span class="lbl">Orders ${growthPill(cOrders,pOrders).html}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cRevenue)}</span><span class="lbl">Revenue ${growthPill(cRevenue,pRevenue).html}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cCod)}</span><span class="lbl">COD ${growthPill(cCod,pCod).html}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtMoney(cCharge)}</span><span class="lbl">Del. Charge ${growthPill(cCharge,pCharge).html}</span></div>
+          <div class="kam-stat-box"><span class="num">${fmtNum(list.length)}</span><span class="lbl">Businesses</span></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Per-business table
+  const metric = STATE.cmpMetric;
+  const isMoney = !!CMP_MONEY_METRICS[metric];
+  const search = (document.getElementById('cmpSearch').value || '').trim().toLowerCase();
+
+  let rows = STATE.merchants.map(m => {
+    const curr = sumArr(m[metric]);
+    const prev = m.prev ? Number(m.prev[metric]) || 0 : null;
+    const g = growthPill(curr, prev);
+    return { m, curr, prev, g };
+  });
+  if (search){
+    rows = rows.filter(r => (r.m.businessName + ' ' + r.m.businessId).toLowerCase().indexOf(search) !== -1);
+  }
+  // Sort: biggest degrowth first, then biggest growth, "New" entries last.
+  rows.sort((a, b) => {
+    if (a.g.pct === null && b.g.pct === null) return b.curr - a.curr;
+    if (a.g.pct === null) return 1;
+    if (b.g.pct === null) return -1;
+    return a.g.pct - b.g.pct;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / CMP_PAGE_SIZE));
+  if (STATE.cmpPage > totalPages) STATE.cmpPage = totalPages;
+  if (STATE.cmpPage < 1) STATE.cmpPage = 1;
+  const startIdx = (STATE.cmpPage - 1) * CMP_PAGE_SIZE;
+  const pageItems = rows.slice(startIdx, startIdx + CMP_PAGE_SIZE);
+
+  const fmtVal = v => isMoney ? fmtMoney(v) : fmtNum(v);
+  const rowsHtml = pageItems.map(r => `
+    <tr>
+      <td>${esc(r.m.businessName)}<div class="mid">#${esc(r.m.businessId)}</div></td>
+      <td><span class="kam-tag">${esc(r.m.assignedKam || 'Unassigned')}</span></td>
+      <td>${fmtVal(r.curr)}</td>
+      <td>${r.prev === null ? '–' : fmtVal(r.prev)}</td>
+      <td>${r.g.html}</td>
+    </tr>`).join('');
+
+  document.getElementById('cmpTable').innerHTML =
+    `<thead><tr><th>Business</th><th>KAM</th><th>This Month</th><th>Last Month</th><th>Growth</th></tr></thead>` +
+    `<tbody>${rowsHtml || '<tr><td colspan="5">No matches.</td></tr>'}</tbody>`;
+
+  let pagHtml = '';
+  for (let p = 1; p <= totalPages; p++){
+    pagHtml += `<button class="pg-btn ${p === STATE.cmpPage ? 'active' : ''}" type="button" data-page="${p}">${p}</button>`;
+  }
+  document.getElementById('cmpPagination').innerHTML = pagHtml;
+}
+
+document.getElementById('cmpMetric').addEventListener('change', e => {
+  STATE.cmpMetric = e.target.value;
+  STATE.cmpPage = 1;
+  renderComparison();
+});
+document.getElementById('cmpSearch').addEventListener('input', debounce(() => {
+  STATE.cmpPage = 1;
+  renderComparison();
+}, 180));
+document.getElementById('cmpPagination').addEventListener('click', e => {
+  const btn = e.target.closest('.pg-btn');
+  if (!btn) return;
+  STATE.cmpPage = Number(btn.dataset.page);
+  renderComparison();
 });
 
 /* ---------------- events ---------------- */
